@@ -105,7 +105,40 @@ const description = "Convert numbers between standard decimal, scientific notati
           </p>
         </div>
       </aside>
+
     </div>
+
+    <!-- SEO Optimization Guide / FAQ -->
+    <div class="mt-12 sm:mt-16 border-t border-hairline pt-12 max-w-4xl">
+      <h2 class="text-xl sm:text-2xl font-semibold text-ink mb-6">Scientific & Engineering Notation Guide</h2>
+      <div class="space-y-6 text-sm text-body leading-relaxed">
+        <div>
+          <h3 class="font-semibold text-ink mb-2">What is Scientific Notation?</h3>
+          <p>
+            Scientific notation is a mathematical format used to express extremely large or extremely small numbers in a simplified way. It writes numbers as a decimal value (between 1.0 and 10.0, called the mantissa) multiplied by 10 raised to an integer power.
+            <br />
+            For example, <strong>150,000</strong> is written as <code class="font-mono text-xs bg-canvas-soft-2 px-1 py-0.5 rounded text-ink">1.5 &times; 10⁵</code>, and <strong>0.0004</strong> is written as <code class="font-mono text-xs bg-canvas-soft-2 px-1 py-0.5 rounded text-ink">4.0 &times; 10⁻⁴</code>.
+          </p>
+        </div>
+        <div>
+          <h3 class="font-semibold text-ink mb-2">What is the difference between Scientific and Engineering Notation?</h3>
+          <p>
+            While scientific notation allows any integer power of 10, **engineering notation** restricts the exponent of 10 to multiples of three (e.g. 10³, 10⁶, 10⁻⁹). Additionally, the mantissa is allowed to range between 1.0 and 999.9.
+            <br />
+            This is widely preferred in physical sciences and electrical engineering because exponents correspond directly to standard metric prefixes like *kilo* (10³), *mega* (10⁶), *micro* (10⁻⁶), and *nano* (10⁻⁹).
+          </p>
+        </div>
+        <div>
+          <h3 class="font-semibold text-ink mb-2">How to write E-Notation?</h3>
+          <p>
+            E-notation (or exponential notation) is a text-based representation of scientific notation widely used by calculators, spreadsheets, and programming languages. It replaces the "x 10^" part with the letter "e" or "E".
+            <br />
+            For example, <code class="font-mono text-xs bg-canvas-soft-2 px-1 py-0.5 rounded text-ink">3.5e6</code> represents <code class="font-mono text-xs bg-canvas-soft-2 px-1 py-0.5 rounded text-ink">3.5 &times; 10⁶</code>, which equals <strong>3,500,000</strong> in standard decimal notation.
+          </p>
+        </div>
+      </div>
+    </div>
+
   </div>
 </Layout>
 
