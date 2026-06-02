@@ -1,0 +1,43 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { Icon } from 'astro-icon/components';
+---
+
+<Layout>
+  <div class="flex flex-col items-center justify-center min-h-[70vh] text-center px-4">
+    <div class="relative mb-8">
+        <div class="text-[120px] md:text-[160px] font-bold text-canvas-soft-2 select-none leading-none">500</div>
+        <div class="absolute inset-0 flex items-center justify-center">
+            <div class="w-20 h-20 bg-canvas border border-hairline rounded-md shadow-xl flex items-center justify-center -rotate-12 group hover:rotate-0 transition-transform duration-500">
+                <Icon name="hugeicons:alert-01" class="w-10 h-10 text-primary" />
+            </div>
+        </div>
+    </div>
+    
+    <h1 class="text-3xl md:text-4xl font-semibold tracking-[-0.04em] text-ink mb-4">Internal Server Error</h1>
+    <p class="text-body max-w-md mx-auto mb-10 leading-relaxed">
+      Oops! Something went wrong on our end. Our engineering team has been notified and we're working to fix the issue.
+    </p>
+
+    <div class="flex flex-col sm:flex-row items-center gap-4">
+        <button 
+            onclick="window.location.reload()"
+            class="h-11 px-6 bg-primary text-on-primary font-medium rounded-sm hover:bg-primary/90 transition-all flex items-center gap-2 shadow-sm"
+        >
+            <Icon name="hugeicons:refresh" class="w-4 h-4" />
+            Refresh Page
+        </button>
+        <a 
+            href="/" 
+            class="h-11 px-6 bg-canvas border border-hairline text-ink font-medium rounded-sm hover:bg-canvas-soft-2 transition-all flex items-center gap-2"
+        >
+            <Icon name="hugeicons:home-01" class="w-4 h-4" />
+            Back to Home
+        </a>
+    </div>
+
+    <div class="mt-12 text-mute text-xs font-mono">
+        Error ID: {Math.random().toString(36).substring(7).toUpperCase()}
+    </div>
+  </div>
+</Layout>

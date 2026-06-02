@@ -1,0 +1,151 @@
+---
+interface Props {
+  className?: string;
+}
+
+const { className } = Astro.props;
+
+const faqs = [
+  {
+    question: "What is a unit converter?",
+    answer: "A unit converter is a digital tool designed to translate a value from one measurement unit to another without changing the quantity's actual magnitude. Whether you are converting meters to feet, kilograms to pounds, or Celsius to Fahrenheit, these tools ensure accuracy across different measurement systems. They are indispensable for students, engineers, and travelers who need quick, reliable results for scientific calculations or everyday tasks. Most modern unit converters are available as simple web apps, mobile applications, or features within physical calculators."
+  },
+  {
+    question: "What happened to Google Unit Converter?",
+    answer: "The Google Unit Converter is still fully functional and built directly into Google Search. You don't need a specific app; just type your conversion request (e.g., \"5 kg to lbs\") into the search bar, and an interactive converter widget will appear instantly. Google frequently refines the interface and expands the list of supported units, ensuring it remains a fast and convenient option for basic conversions. While it may look slightly different over time, the core functionality remains one of Google's most used search features."
+  },
+  {
+    question: "How to use unit converter on TI-84 Plus?",
+    answer: "To use the unit converter on a TI-84 Plus, you usually rely on the \"SciTools\" application. Press the APPS button, find SciTools in the list, and press ENTER. Select Unit Converter from the app menu. Once there, you can navigate through categories like Area, Length, or Mass. Choose your initial unit and the target unit using the arrow keys, enter the value you want to convert, and the calculator will provide the result. If you don't see SciTools, it can be downloaded and transferred via TI Connect."
+  },
+  {
+    question: "How to use unit converter on TI-84 Plus CE?",
+    answer: "On the TI-84 Plus CE, unit conversion is streamlined through the color-enabled interface. Access the APPS menu and open the SciTools app. Select the Unit Converter option to see a vibrant list of measurement categories. Use the arrow keys to pick your source and destination units. The CE model's high-resolution screen makes reading complex conversions much easier than on older models. Simply type your number, press ENTER, and the result is displayed. The process is intuitive and significantly faster due to the CE's improved hardware."
+  },
+  {
+    question: "How to make a unit converter in Python?",
+    answer: "Building a unit converter in Python is an excellent introductory coding project. Start by creating a function that stores conversion factors in a dictionary. For example, use a \"base unit\" (like meters) and map other units to their multiplier relative to that base. The logic is simple: multiply the input value by the source unit's factor to reach the base, then divide by the target unit's factor. You can expand this with a graphical user interface using libraries like Tkinter or create a command-line interface for quick terminal-based conversions."
+  },
+  {
+    question: "How to make a unit converter in Java?",
+    answer: "Creating a unit converter in Java involves building a structured application using classes and methods. You can define a Measurement class that handles the mathematical conversion logic. For a console-based app, use Scanner for user inputs. For a GUI, Swing or JavaFX allows you to create input fields and drop-down menus. By using an enum for unit types and their corresponding conversion constants, you can keep your code organized and easy to maintain. Java's strong typing ensures your mathematical operations remain precise across various measurement types."
+  },
+  {
+    question: "How to make a unit converter in Visual Basic?",
+    answer: "Visual Basic is well-suited for creating desktop-based unit converters with a simple Windows interface. In a Windows Forms project, use ComboBox controls to let users select units and a TextBox for the input value. Use a Select Case statement in the TextChanged event to apply the correct conversion formula dynamically. Visual Basic's readable syntax makes it easy to implement basic math, such as result = input * 0.3048 for feet-to-meters conversions. This approach provides a professional-looking tool with very little complex coding required."
+  },
+  {
+    question: "How to create a unit converter in Android Studio?",
+    answer: "To build a unit converter in Android Studio, you'll use Kotlin or Java along with XML for the layout. Design a UI with EditText for the value and Spinner for unit categories. The ViewModel pattern is recommended to handle the conversion logic and maintain state during device rotations. You can implement real-time updates using TextWatcher, so the result changes as the user types. This provides a modern, responsive mobile experience typical of high-quality utility apps found on the Google Play Store."
+  },
+  {
+    question: "How to make a unit converter in Excel?",
+    answer: "Excel provides a powerful built-in function called CONVERT that handles most unit conversions automatically. The formula is =CONVERT(number, \"from_unit\", \"to_unit\"). For example, =CONVERT(10, \"in\", \"cm\") will convert 10 inches into centimeters. To create a full interactive tool, set up a spreadsheet where users can enter values and select unit codes from a drop-down list. This allows you to handle thousands of conversions simultaneously by dragging the formula down, making it the perfect choice for data-heavy engineering or scientific projects."
+  }
+];
+
+const schema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": faqs.map((faq) => ({
+    "@type": "Question",
+    "name": faq.question,
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": faq.answer
+    }
+  }))
+};
+---
+
+<section class:list={["py-12 sm:py-14 md:py-16 bg-canvas", className]} id="faq">
+  <div class="max-w-6xl mx-auto px-4">
+    <h2 class="text-xl sm:text-2xl font-semibold tracking-[-0.03em] text-ink mb-5 sm:mb-6 text-center">
+      Frequently Asked Questions About Unit Converters
+    </h2>
+    
+    <div class="space-y-2 sm:space-y-3">
+      {faqs.map((faq, index) => (
+        <div 
+          class="faq-item group border border-hairline rounded-lg bg-canvas-soft overflow-hidden transition-all duration-200 hover:border-hairline-strong"
+          itemscope 
+          itemtype="https://schema.org/Question"
+        >
+          <button 
+            class="faq-trigger w-full flex items-center justify-between p-4 sm:p-4 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 touch-manipulation min-h-[48px]"
+            aria-expanded="false"
+            aria-controls={`faq-answer-${index}`}
+          >
+            <span class="text-sm font-semibold text-ink pr-4 sm:pr-8 leading-snug" itemprop="name">
+              {faq.question}
+            </span>
+            <svg 
+              class="w-4 h-4 text-mute transition-transform duration-300 transform group-[.active]:rotate-180 flex-shrink-0" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          
+          <div 
+            id={`faq-answer-${index}`}
+            class="faq-content max-h-0 overflow-hidden transition-all duration-300 ease-in-out"
+            itemprop="acceptedAnswer" 
+            itemscope 
+            itemtype="https://schema.org/Answer"
+          >
+            <div class="px-4 pb-4 pt-0 text-xs sm:text-sm text-body leading-relaxed" itemprop="text">
+              {faq.answer}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <script type="application/ld+json" set:html={JSON.stringify(schema)} />
+</section>
+
+<script>
+  function setupFAQ() {
+    const faqItems = document.querySelectorAll('.faq-item');
+    
+    faqItems.forEach(item => {
+      const trigger = item.querySelector('.faq-trigger');
+      const content = item.querySelector('.faq-content') as HTMLElement;
+      
+      trigger?.addEventListener('click', () => {
+        const isOpen = item.classList.contains('active');
+        
+        // Close all other items (optional: remove this loop if you want multiple items open)
+        faqItems.forEach(otherItem => {
+          if (otherItem !== item) {
+            otherItem.classList.remove('active');
+            otherItem.querySelector('.faq-trigger')?.setAttribute('aria-expanded', 'false');
+            (otherItem.querySelector('.faq-content') as HTMLElement).style.maxHeight = '0';
+          }
+        });
+
+        // Toggle current item
+        if (isOpen) {
+          item.classList.remove('active');
+          trigger.setAttribute('aria-expanded', 'false');
+          content.style.maxHeight = '0';
+        } else {
+          item.classList.add('active');
+          trigger.setAttribute('aria-expanded', 'true');
+          content.style.maxHeight = content.scrollHeight + 'px';
+        }
+      });
+    });
+  }
+
+  // Run on initial load
+  setupFAQ();
+
+  // Run on view transitions (if enabled)
+  document.addEventListener('astro:after-swap', setupFAQ);
+</script>

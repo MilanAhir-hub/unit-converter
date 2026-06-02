@@ -1,0 +1,160 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { Icon } from 'astro-icon/components';
+
+const title = "Discount Calculator";
+const categoryTitle = "Financial Calculators";
+const description = "Calculate the final price after applying a discount. Instantly find out how much you save on sales and promotions.";
+
+---
+
+<Layout title={`${title} — Free Online Calculator`} description={description}>
+  <div class="max-w-6xl mx-auto py-6 sm:py-10 md:py-16 px-4">
+
+    <!-- Breadcrumbs -->
+    <nav class="flex items-center gap-1.5 sm:gap-2 mb-5 sm:mb-6 text-[10px] sm:text-[11px] font-mono text-mute uppercase tracking-widest overflow-x-auto no-scrollbar whitespace-nowrap pb-1" aria-label="Breadcrumb">
+      <a href="/" class="hover:text-ink transition-colors">Home</a>
+      <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
+      <span class="text-body">{categoryTitle}</span>
+      <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
+      <span class="text-ink font-semibold">{title}</span>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="mb-7 sm:mb-10">
+      <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-[-0.04em] text-ink mb-3 sm:mb-4 leading-tight">{title}</h1>
+      <p class="text-body max-w-2xl leading-relaxed text-sm">{description}</p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-10 mb-12 sm:mb-16">
+      
+      <!-- Calculator Main -->
+      <div class="lg:col-span-2 space-y-6">
+        
+        <div class="bg-canvas border border-hairline rounded-md shadow-[0_1px_1px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.04)] overflow-hidden">
+          <div class="p-6 sm:p-8 md:p-10 space-y-8">
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
+              
+              <!-- Original Price -->
+              <div class="space-y-3">
+                <label class="block text-[11px] font-semibold font-mono text-mute uppercase tracking-wider">Original Price</label>
+                <div class="relative">
+                  <span class="absolute left-4 top-1/2 -translate-y-1/2 text-mute font-medium">$</span>
+                  <input
+                    id="price-input"
+                    type="number"
+                    value="100"
+                    min="0"
+                    step="0.01"
+                    class="w-full h-12 pl-8 pr-4 bg-canvas-soft border border-hairline rounded-sm text-lg font-semibold text-ink focus:outline-none focus:border-hairline-strong transition-all"
+                  />
+                </div>
+              </div>
+
+              <!-- Discount Percentage -->
+              <div class="space-y-3">
+                <label class="block text-[11px] font-semibold font-mono text-mute uppercase tracking-wider">Discount</label>
+                <div class="relative">
+                  <input
+                    id="discount-input"
+                    type="number"
+                    value="20"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    class="w-full h-12 pl-4 pr-8 bg-canvas-soft border border-hairline rounded-sm text-lg font-semibold text-ink focus:outline-none focus:border-hairline-strong transition-all"
+                  />
+                  <span class="absolute right-4 top-1/2 -translate-y-1/2 text-mute font-medium">%</span>
+                </div>
+              </div>
+
+            </div>
+
+            <div id="error-msg" class="text-red-500 text-sm font-medium hidden text-center">Please enter valid positive numbers.</div>
+
+            <hr class="border-hairline" />
+
+            <!-- Result -->
+            <div class="bg-canvas-soft-2 border border-hairline p-6 rounded-md text-center flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-hairline">
+               
+               <div class="flex-1 pb-4 sm:pb-0 sm:pr-4 flex flex-col justify-center">
+                 <span class="block text-[10px] font-mono text-mute uppercase tracking-widest mb-2">Final Price</span>
+                 <div id="final-price" class="text-4xl sm:text-5xl font-bold text-primary tracking-tight">$80.00</div>
+               </div>
+
+               <div class="flex-1 pt-4 sm:pt-0 sm:pl-4 flex flex-col justify-center">
+                 <span class="block text-[10px] font-mono text-mute uppercase tracking-widest mb-2">You Save</span>
+                 <div id="saved-amount" class="text-2xl sm:text-3xl font-semibold text-green-500 tracking-tight">$20.00</div>
+               </div>
+
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Sidebar -->
+      <aside class="space-y-6">
+        <div class="p-6 bg-canvas border border-hairline rounded-md">
+          <h3 class="text-base font-semibold text-ink mb-4">Formula</h3>
+          <p class="text-sm text-body leading-relaxed mb-4">
+            Discount Amount = Original Price × (Discount % / 100)<br/><br/>
+            Final Price = Original Price - Discount Amount
+          </p>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { calculateDiscount } from '../../utils/calculators/discountLogic';
+
+  const priceInput = document.getElementById('price-input') as HTMLInputElement;
+  const discountInput = document.getElementById('discount-input') as HTMLInputElement;
+  
+  const resFinal = document.getElementById('final-price');
+  const resSaved = document.getElementById('saved-amount');
+  const errMsg = document.getElementById('error-msg');
+
+  function calculate() {
+    const price = parseFloat(priceInput.value);
+    const discount = parseFloat(discountInput.value);
+
+    if (isNaN(price) || isNaN(discount) || price < 0 || discount < 0) {
+      resFinal!.textContent = '—';
+      resSaved!.textContent = '—';
+      errMsg!.classList.remove('hidden');
+      return;
+    }
+    
+    errMsg!.classList.add('hidden');
+
+    const res = calculateDiscount(price, discount);
+
+    if (!res) {
+      resFinal!.textContent = '—';
+      resSaved!.textContent = '—';
+      errMsg!.classList.remove('hidden');
+      return;
+    }
+
+    resFinal!.textContent = '$' + res.finalPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    resSaved!.textContent = '$' + res.discountAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  [priceInput, discountInput].forEach(el => {
+    el.addEventListener('input', calculate);
+  });
+
+  // Initial calculation
+  calculate();
+</script>
+
+<style>
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+</style>

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://realunitconverter.com/sitemap-index.xml

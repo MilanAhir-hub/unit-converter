@@ -1,0 +1,45 @@
+---
+interface Props {
+  className?: string;
+  reverse?: boolean;
+  pauseOnHover?: boolean;
+  vertical?: boolean;
+  repeat?: number;
+  [key: string]: any;
+}
+
+const {
+  className = '',
+  reverse = false,
+  pauseOnHover = false,
+  vertical = false,
+  repeat = 4,
+  ...props
+} = Astro.props;
+---
+
+<div
+  class:list={[
+    "group flex overflow-hidden p-2 [--duration:40s] [--gap:1rem]",
+    vertical ? "flex-col" : "flex-row",
+    className
+  ]}
+  {...props}
+>
+  {
+    Array.from({ length: repeat }).map(() => (
+      <div
+        class:list={[
+          "flex shrink-0 justify-around gap-[var(--gap)]",
+          vertical 
+            ? "animate-marquee-vertical flex-col min-h-full" 
+            : "animate-marquee flex-row min-w-full",
+          reverse ? "[animation-direction:reverse]" : "",
+          pauseOnHover ? "group-hover:[animation-play-state:paused]" : ""
+        ]}
+      >
+        <slot />
+      </div>
+    ))
+  }
+</div>

@@ -1,0 +1,168 @@
+---
+import { Icon } from 'astro-icon/components';
+
+const currentYear = new Date().getFullYear();
+
+const popularConverters = [
+  { title: "Length Converter", href: "/unit-converters/length" },
+  { title: "Weight Converter", href: "/unit-converters/weight-mass" },
+  { title: "Temperature Converter", href: "/unit-converters/temperature" },
+  { title: "Area Converter", href: "/unit-converters/area" },
+  { title: "Volume Converter", href: "/unit-converters/volume" },
+  { title: "Time Converter", href: "/unit-converters/time" },
+  { title: "Speed Converter", href: "/unit-converters/speed" },
+  { title: "Data Storage Converter", href: "/unit-converters/data-storage" },
+  { title: "Currency Converter", href: "/unit-converters/currency" },
+];
+
+const popularConversions = [
+  { title: "CM to Inches", href: "/popular/cm-to-inches" },
+  { title: "Inches to CM", href: "/popular/inches-to-cm" },
+  { title: "KG to Pounds", href: "/popular/kg-to-pounds" },
+  { title: "Pounds to KG", href: "/popular/pounds-to-kg" },
+  { title: "KM to Miles", href: "/popular/km-to-miles" },
+  { title: "Miles to KM", href: "/popular/miles-to-km" },
+  { title: "MB to GB", href: "/popular/mb-to-gb" },
+  { title: "GB to TB", href: "/popular/gb-to-tb" },
+];
+
+const calculators = [
+  { title: "Percentage Calculator", href: "/calculators/percentage" },
+  { title: "Age Calculator", href: "/calculators/age" },
+  { title: "BMI Calculator", href: "/calculators/bmi" },
+  { title: "EMI Calculator", href: "/calculators/emi" },
+  { title: "Discount Calculator", href: "/calculators/discount" },
+  { title: "Scientific Calculator", href: "/calculators/scientific" },
+];
+
+const resources = [
+  { title: "Blog", href: "/blog" },
+  { title: "Guides", href: "/blog" },
+  { title: "FAQ", href: "/#faq" },
+  { title: "About Us", href: "/about" },
+  { title: "Contact Us", href: "/contact" },
+];
+
+const legal = [
+  { title: "Privacy Policy", href: "/privacy" },
+  { title: "Terms and Conditions", href: "/terms" },
+  { title: "Disclaimer", href: "/disclaimer" },
+  { title: "Cookie Policy", href: "/cookies" },
+  { title: "Sitemap", href: "/sitemap" },
+];
+---
+
+<footer class="w-full bg-canvas border-t border-hairline py-10 sm:py-12 md:py-16 mt-auto">
+  <div class="max-w-[1400px] mx-auto px-4 md:px-8 w-full">
+    <!-- Top Footer: Brand & Multi-column Grid -->
+    <!-- Mobile: 2-col; SM: 2-col; MD: 3-col; LG: 6-col -->
+    <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 sm:gap-8 pb-10 sm:pb-12 border-b border-hairline w-full text-left">
+      
+      <!-- Column 1: Brand (full width on mobile, spans 2 cols on sm) -->
+      <div class="flex flex-col gap-3 sm:gap-4 col-span-2 sm:col-span-2 md:col-span-3 lg:col-span-1">
+        <a href="/" class="flex items-center gap-2 select-none">
+          <img src="/lightmode_unit.png" alt="UnitConverter" class="h-7 sm:h-8 w-auto dark:hidden" />
+          <img src="/darkmode_unit.png" alt="UnitConverter" class="h-7 sm:h-8 w-auto hidden dark:block" />
+        </a>
+        <p class="text-[13px] text-body leading-relaxed max-w-xs sm:max-w-sm">
+          Free online unit converter with hundreds of conversion tools, calculators, and conversion pages for everyday, academic, engineering, and professional use.
+        </p>
+      </div>
+
+      <!-- Column 2: Popular Converters -->
+      <div class="flex flex-col gap-3 sm:gap-4">
+        <h4 class="text-[11px] font-semibold tracking-wider font-mono text-mute uppercase select-none">
+          Popular Converters
+        </h4>
+        <ul class="flex flex-col gap-2">
+          {popularConverters.map((item) => (
+            <li>
+              <a href={item.href} class="text-[13px] text-body hover:text-ink hover:underline transition-colors block py-0.5 truncate max-w-full touch-manipulation">
+                {item.title}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <!-- Column 3: Popular Conversions -->
+      <div class="flex flex-col gap-3 sm:gap-4">
+        <h4 class="text-[11px] font-semibold tracking-wider font-mono text-mute uppercase select-none">
+          Popular Conversions
+        </h4>
+        <ul class="flex flex-col gap-2">
+          {popularConversions.map((item) => (
+            <li>
+              <a href={item.href} class="text-[13px] text-body hover:text-ink hover:underline transition-colors block py-0.5 truncate max-w-full touch-manipulation">
+                {item.title}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <!-- Column 4: Calculators -->
+      <div class="flex flex-col gap-3 sm:gap-4">
+        <h4 class="text-[11px] font-semibold tracking-wider font-mono text-mute uppercase select-none">
+          Calculators
+        </h4>
+        <ul class="flex flex-col gap-2">
+          {calculators.map((item) => (
+            <li>
+              <a href={item.href} class="text-[13px] text-body hover:text-ink hover:underline transition-colors block py-0.5 truncate max-w-full touch-manipulation">
+                {item.title}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <!-- Column 5: Resources -->
+      <div class="flex flex-col gap-3 sm:gap-4">
+        <h4 class="text-[11px] font-semibold tracking-wider font-mono text-mute uppercase select-none">
+          Resources
+        </h4>
+        <ul class="flex flex-col gap-2">
+          {resources.map((item) => (
+            <li>
+              <a href={item.href} class="text-[13px] text-body hover:text-ink hover:underline transition-colors block py-0.5 truncate max-w-full touch-manipulation">
+                {item.title}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <!-- Column 6: Legal -->
+      <div class="flex flex-col gap-3 sm:gap-4">
+        <h4 class="text-[11px] font-semibold tracking-wider font-mono text-mute uppercase select-none">
+          Legal
+        </h4>
+        <ul class="flex flex-col gap-2">
+          {legal.map((item) => (
+            <li>
+              <a href={item.href} class="text-[13px] text-body hover:text-ink hover:underline transition-colors block py-0.5 truncate max-w-full touch-manipulation">
+                {item.title}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- Bottom Footer: Copyright & Additional Links -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 pt-6 sm:pt-8 text-[12px] text-mute select-none font-mono w-full">
+      <div>
+        &copy; {currentYear} UnitConverter. All Rights Reserved.
+      </div>
+      <div class="flex items-center gap-3 sm:gap-4 flex-wrap justify-center">
+        <a href="/sitemap" class="hover:text-ink transition-colors py-1">Sitemap</a>
+        <span aria-hidden="true">&bull;</span>
+        <a href="/privacy" class="hover:text-ink transition-colors py-1">Privacy Policy</a>
+        <span aria-hidden="true">&bull;</span>
+        <a href="/terms" class="hover:text-ink transition-colors py-1">Terms &amp; Conditions</a>
+      </div>
+    </div>
+  </div>
+</footer>

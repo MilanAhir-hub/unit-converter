@@ -1,0 +1,12 @@
+---
+// ScientificBackground.astro
+// Global canvas-based scientific particle background.
+// Mounted once in Layout.astro — appears behind all pages.
+import './ScientificBackground.css';
+---
+
+<div id="sci-bg-container" aria-hidden="true" role="presentation">
+  <canvas id="sci-bg"></canvas>
+</div>
+
+<script src="./ScientificBackground.ts"></script>

@@ -1,0 +1,164 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { Icon } from 'astro-icon/components';
+
+const title = "Percentage Calculator";
+const categoryTitle = "Math Calculators";
+const description = "Calculate percentages in multiple ways: find X% of Y, figure out what % X is of Y, or calculate percentage increases and decreases.";
+
+---
+
+<Layout title={`${title} — Free Online Calculator`} description={description}>
+  <div class="max-w-6xl mx-auto py-6 sm:py-10 md:py-16 px-4">
+
+    <!-- Breadcrumbs -->
+    <nav class="flex items-center gap-1.5 sm:gap-2 mb-5 sm:mb-6 text-[10px] sm:text-[11px] font-mono text-mute uppercase tracking-widest overflow-x-auto no-scrollbar whitespace-nowrap pb-1" aria-label="Breadcrumb">
+      <a href="/" class="hover:text-ink transition-colors">Home</a>
+      <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
+      <span class="text-body">{categoryTitle}</span>
+      <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
+      <span class="text-ink font-semibold">{title}</span>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="mb-7 sm:mb-10">
+      <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-[-0.04em] text-ink mb-3 sm:mb-4 leading-tight">{title}</h1>
+      <p class="text-body max-w-2xl leading-relaxed text-sm">{description}</p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-10 mb-12 sm:mb-16">
+      
+      <!-- Calculator Main -->
+      <div class="lg:col-span-2 space-y-6">
+        
+        <!-- Mode 1: What is X% of Y? -->
+        <div class="bg-canvas border border-hairline rounded-md shadow-[0_1px_1px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.04)] overflow-hidden">
+          <div class="p-6 md:p-8 space-y-6">
+            <h3 class="text-lg font-semibold text-ink">What is X% of Y?</h3>
+            <div class="flex flex-wrap items-center gap-4">
+              <span class="text-sm font-medium text-mute">What is</span>
+              <div class="relative w-24">
+                <input id="m1-x" type="number" value="20" class="w-full h-10 px-3 pr-6 bg-canvas-soft border border-hairline rounded-sm font-semibold text-ink focus:outline-none" />
+                <span class="absolute right-2 top-1/2 -translate-y-1/2 text-mute text-xs">%</span>
+              </div>
+              <span class="text-sm font-medium text-mute">of</span>
+              <input id="m1-y" type="number" value="150" class="w-32 h-10 px-3 bg-canvas-soft border border-hairline rounded-sm font-semibold text-ink focus:outline-none" />
+              <span class="text-sm font-medium text-mute">?</span>
+            </div>
+            <div class="bg-canvas-soft-2 border border-hairline px-4 py-3 rounded-md flex justify-between items-center">
+              <span class="text-xs font-mono text-mute uppercase tracking-widest">Result</span>
+              <span id="m1-res" class="text-2xl font-bold text-primary">30</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mode 2: X is what % of Y? -->
+        <div class="bg-canvas border border-hairline rounded-md shadow-[0_1px_1px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.04)] overflow-hidden">
+          <div class="p-6 md:p-8 space-y-6">
+            <h3 class="text-lg font-semibold text-ink">X is what percentage of Y?</h3>
+            <div class="flex flex-wrap items-center gap-4">
+              <input id="m2-x" type="number" value="30" class="w-32 h-10 px-3 bg-canvas-soft border border-hairline rounded-sm font-semibold text-ink focus:outline-none" />
+              <span class="text-sm font-medium text-mute">is what % of</span>
+              <input id="m2-y" type="number" value="150" class="w-32 h-10 px-3 bg-canvas-soft border border-hairline rounded-sm font-semibold text-ink focus:outline-none" />
+              <span class="text-sm font-medium text-mute">?</span>
+            </div>
+            <div class="bg-canvas-soft-2 border border-hairline px-4 py-3 rounded-md flex justify-between items-center">
+              <span class="text-xs font-mono text-mute uppercase tracking-widest">Result</span>
+              <span id="m2-res" class="text-2xl font-bold text-primary">20%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mode 3: Percentage Change -->
+        <div class="bg-canvas border border-hairline rounded-md shadow-[0_1px_1px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.04)] overflow-hidden">
+          <div class="p-6 md:p-8 space-y-6">
+            <h3 class="text-lg font-semibold text-ink">Percentage Increase/Decrease</h3>
+            <div class="flex flex-wrap items-center gap-4">
+              <span class="text-sm font-medium text-mute">From</span>
+              <input id="m3-x" type="number" value="100" class="w-32 h-10 px-3 bg-canvas-soft border border-hairline rounded-sm font-semibold text-ink focus:outline-none" />
+              <span class="text-sm font-medium text-mute">to</span>
+              <input id="m3-y" type="number" value="150" class="w-32 h-10 px-3 bg-canvas-soft border border-hairline rounded-sm font-semibold text-ink focus:outline-none" />
+            </div>
+            <div class="bg-canvas-soft-2 border border-hairline px-4 py-3 rounded-md flex justify-between items-center">
+              <span class="text-xs font-mono text-mute uppercase tracking-widest">Result</span>
+              <span id="m3-res" class="text-2xl font-bold text-green-500">+50%</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Sidebar -->
+      <aside class="space-y-6">
+        <div class="p-6 bg-canvas border border-hairline rounded-md">
+          <h3 class="text-base font-semibold text-ink mb-4">Percentage Formulas</h3>
+          <ul class="space-y-4 text-sm text-body">
+            <li><strong>X% of Y:</strong><br/> (X / 100) × Y</li>
+            <li><strong>X is what % of Y:</strong><br/> (X / Y) × 100</li>
+            <li><strong>% Change:</strong><br/> ((Y - X) / X) × 100</li>
+          </ul>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { calculatePercentageOf, calculatePercentageIs, calculatePercentageChange } from '../../utils/calculators/percentageLogic';
+
+  // Mode 1
+  const m1x = document.getElementById('m1-x') as HTMLInputElement;
+  const m1y = document.getElementById('m1-y') as HTMLInputElement;
+  const m1res = document.getElementById('m1-res');
+  
+  function calcM1() {
+    const res = calculatePercentageOf(parseFloat(m1x.value), parseFloat(m1y.value));
+    m1res!.textContent = res !== null ? res.toString() : '—';
+  }
+  [m1x, m1y].forEach(el => el.addEventListener('input', calcM1));
+  calcM1();
+
+  // Mode 2
+  const m2x = document.getElementById('m2-x') as HTMLInputElement;
+  const m2y = document.getElementById('m2-y') as HTMLInputElement;
+  const m2res = document.getElementById('m2-res');
+  
+  function calcM2() {
+    const res = calculatePercentageIs(parseFloat(m2x.value), parseFloat(m2y.value));
+    m2res!.textContent = res !== null ? res.toString() + '%' : '—';
+  }
+  [m2x, m2y].forEach(el => el.addEventListener('input', calcM2));
+  calcM2();
+
+  // Mode 3
+  const m3x = document.getElementById('m3-x') as HTMLInputElement;
+  const m3y = document.getElementById('m3-y') as HTMLInputElement;
+  const m3res = document.getElementById('m3-res');
+  
+  function calcM3() {
+    const res = calculatePercentageChange(parseFloat(m3x.value), parseFloat(m3y.value));
+    if (res === null) {
+      m3res!.textContent = '—';
+      m3res!.className = 'text-2xl font-bold text-ink';
+    } else {
+      if (res > 0) {
+        m3res!.textContent = '+' + res + '%';
+        m3res!.className = 'text-2xl font-bold text-green-500';
+      } else if (res < 0) {
+        m3res!.textContent = res + '%';
+        m3res!.className = 'text-2xl font-bold text-red-500';
+      } else {
+        m3res!.textContent = '0%';
+        m3res!.className = 'text-2xl font-bold text-ink';
+      }
+    }
+  }
+  [m3x, m3y].forEach(el => el.addEventListener('input', calcM3));
+  calcM3();
+</script>
+
+<style>
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+</style>

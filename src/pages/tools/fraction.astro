@@ -1,0 +1,379 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { Icon } from 'astro-icon/components';
+import Dropdown from '../../components/Dropdown.astro';
+
+const title = "Fraction Calculator";
+const categoryTitle = "Scientific Tools";
+const description = "Calculate and simplify fractions instantly. Supports addition, subtraction, multiplication, and division of proper, improper, mixed, and decimal numbers.";
+---
+
+<Layout title={`${title} — Free Online Calculator`} description={description}>
+  <div class="max-w-6xl mx-auto py-6 sm:py-10 md:py-16 px-4">
+
+    <!-- ── Breadcrumbs ──────────────────────────────────────────────────────── -->
+    <nav class="flex items-center gap-1.5 sm:gap-2 mb-5 sm:mb-6 text-[10px] sm:text-[11px] font-mono text-mute uppercase tracking-widest overflow-x-auto no-scrollbar whitespace-nowrap pb-1" aria-label="Breadcrumb">
+      <a href="/" class="hover:text-ink transition-colors">Home</a>
+      <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
+      <span class="text-body">{categoryTitle}</span>
+      <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
+      <span class="text-ink font-semibold">{title}</span>
+    </nav>
+
+    <!-- ── Page Header ─────────────────────────────────────────────────────── -->
+    <header class="mb-7 sm:mb-10">
+      <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-[-0.04em] text-ink mb-3 sm:mb-4 leading-tight">{title}</h1>
+      <p class="text-body max-w-2xl leading-relaxed text-sm">{description}</p>
+    </header>
+
+    <!-- ── Converter Layout ────────────────────────────────────────────────── -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-10 mb-12 sm:mb-16">
+      
+      <!-- Main Calculator Section -->
+      <div class="lg:col-span-2 space-y-6">
+        
+        <div class="bg-canvas border border-hairline rounded-md shadow-[0_1px_1px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.04)] overflow-hidden">
+          <div class="p-6 sm:p-8 md:p-10">
+            
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8">
+              
+              <!-- Fraction A Input -->
+              <div class="w-full sm:w-1/3">
+                <label class="block text-[11px] font-semibold font-mono text-mute uppercase tracking-wider mb-2">First Fraction</label>
+                <input
+                  id="frac-a"
+                  type="text"
+                  placeholder="e.g. 1/2, 2 1/3, -5"
+                  autocomplete="off"
+                  class="w-full h-14 px-4 bg-canvas-soft border border-hairline rounded-sm text-xl font-semibold text-ink focus:outline-none focus:border-hairline-strong transition-all placeholder:text-mute/50"
+                />
+                <div id="err-a" class="text-red-500 text-xs mt-1.5 font-medium hidden">Invalid fraction format</div>
+              </div>
+
+              <!-- Operator -->
+              <div class="relative shrink-0 z-10 py-4 sm:py-0 pt-6">
+                <Dropdown
+                  id="operator"
+                  options={[
+                    { key: '+', label: '+' },
+                    { key: '-', label: '-' },
+                    { key: '*', label: '×' },
+                    { key: '/', label: '÷' }
+                  ]}
+                  selected="+"
+                  class="w-20"
+                />
+              </div>
+
+              <!-- Fraction B Input -->
+              <div class="w-full sm:w-1/3">
+                <label class="block text-[11px] font-semibold font-mono text-mute uppercase tracking-wider mb-2">Second Fraction</label>
+                <input
+                  id="frac-b"
+                  type="text"
+                  placeholder="e.g. 3/4"
+                  autocomplete="off"
+                  class="w-full h-14 px-4 bg-canvas-soft border border-hairline rounded-sm text-xl font-semibold text-ink focus:outline-none focus:border-hairline-strong transition-all placeholder:text-mute/50"
+                />
+                <div id="err-b" class="text-red-500 text-xs mt-1.5 font-medium hidden">Invalid fraction format</div>
+              </div>
+
+            </div>
+
+            <!-- Global Error (like div by zero) -->
+            <div id="global-err" class="text-red-500 text-sm text-center mt-6 font-medium hidden"></div>
+
+            <hr class="my-8 border-hairline" />
+
+            <!-- Result Grid -->
+            <div class="space-y-4">
+               <h3 class="text-[11px] font-semibold font-mono text-mute uppercase tracking-wider mb-4 text-center">Results</h3>
+               
+               <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <!-- Simplified Fraction -->
+                  <div class="bg-canvas-soft-2 border border-hairline p-4 rounded-md text-center relative group">
+                     <span class="block text-[10px] font-mono text-mute uppercase tracking-widest mb-1.5">Simplified</span>
+                     <div id="out-frac" class="text-xl sm:text-2xl font-bold text-ink tracking-tight">—</div>
+                     <button class="copy-btn absolute top-2 right-2 text-mute hover:text-ink opacity-0 group-hover:opacity-100 transition-opacity" data-target="out-frac" aria-label="Copy">
+                        <Icon name="hugeicons:copy-01" class="w-3.5 h-3.5" />
+                     </button>
+                  </div>
+
+                  <!-- Mixed Number -->
+                  <div class="bg-canvas-soft-2 border border-hairline p-4 rounded-md text-center relative group">
+                     <span class="block text-[10px] font-mono text-mute uppercase tracking-widest mb-1.5">Mixed</span>
+                     <div id="out-mixed" class="text-xl sm:text-2xl font-bold text-ink tracking-tight">—</div>
+                     <button class="copy-btn absolute top-2 right-2 text-mute hover:text-ink opacity-0 group-hover:opacity-100 transition-opacity" data-target="out-mixed" aria-label="Copy">
+                        <Icon name="hugeicons:copy-01" class="w-3.5 h-3.5" />
+                     </button>
+                  </div>
+
+                  <!-- Decimal -->
+                  <div class="bg-canvas-soft-2 border border-hairline p-4 rounded-md text-center relative group">
+                     <span class="block text-[10px] font-mono text-mute uppercase tracking-widest mb-1.5">Decimal</span>
+                     <div id="out-dec" class="text-xl sm:text-2xl font-bold text-ink tracking-tight overflow-hidden text-ellipsis">—</div>
+                     <button class="copy-btn absolute top-2 right-2 text-mute hover:text-ink opacity-0 group-hover:opacity-100 transition-opacity" data-target="out-dec" aria-label="Copy">
+                        <Icon name="hugeicons:copy-01" class="w-3.5 h-3.5" />
+                     </button>
+                  </div>
+
+                  <!-- Percentage -->
+                  <div class="bg-canvas-soft-2 border border-hairline p-4 rounded-md text-center relative group">
+                     <span class="block text-[10px] font-mono text-mute uppercase tracking-widest mb-1.5">Percentage</span>
+                     <div id="out-perc" class="text-xl sm:text-2xl font-bold text-ink tracking-tight overflow-hidden text-ellipsis">—</div>
+                     <button class="copy-btn absolute top-2 right-2 text-mute hover:text-ink opacity-0 group-hover:opacity-100 transition-opacity" data-target="out-perc" aria-label="Copy">
+                        <Icon name="hugeicons:copy-01" class="w-3.5 h-3.5" />
+                     </button>
+                  </div>
+               </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- History Section -->
+        <div class="bg-canvas border border-hairline rounded-md p-6 sm:p-8">
+           <div class="flex items-center justify-between mb-4">
+             <h3 class="text-base font-semibold text-ink">Calculation History</h3>
+             <button id="clear-history" class="text-xs text-mute hover:text-red-500 transition-colors">Clear</button>
+           </div>
+           <ul id="history-list" class="space-y-2 max-h-48 overflow-y-auto pr-2">
+             <li class="text-xs text-mute italic">No history yet. Start calculating!</li>
+           </ul>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <aside class="space-y-6">
+        <div class="p-6 bg-canvas border border-hairline rounded-md">
+          <h3 class="text-base font-semibold text-ink mb-5">Supported Formats</h3>
+          <div class="space-y-3 text-sm text-body leading-relaxed">
+            <p>You can input numbers in many flexible formats:</p>
+            <ul class="list-disc pl-4 space-y-1 text-ink/80">
+               <li><strong class="text-ink">Standard:</strong> <code>1/2</code></li>
+               <li><strong class="text-ink">Mixed:</strong> <code>2 1/3</code></li>
+               <li><strong class="text-ink">Negative:</strong> <code>-5/8</code></li>
+               <li><strong class="text-ink">Whole:</strong> <code>5</code> or <code>-7</code></li>
+               <li><strong class="text-ink">Decimal:</strong> <code>0.75</code> or <code>1.5</code></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="p-6 bg-canvas border border-hairline rounded-md">
+           <h3 class="text-base font-semibold text-ink mb-4">Quick Examples</h3>
+           <div class="space-y-2">
+             <button class="example-btn w-full text-left px-3 py-2 text-sm bg-canvas-soft hover:bg-canvas-soft-2 border border-transparent hover:border-hairline rounded transition-all" data-a="1/2" data-op="+" data-b="1/3">1/2 + 1/3</button>
+             <button class="example-btn w-full text-left px-3 py-2 text-sm bg-canvas-soft hover:bg-canvas-soft-2 border border-transparent hover:border-hairline rounded transition-all" data-a="2 1/3" data-op="*" data-b="-3/4">2 1/3 × -3/4</button>
+             <button class="example-btn w-full text-left px-3 py-2 text-sm bg-canvas-soft hover:bg-canvas-soft-2 border border-transparent hover:border-hairline rounded transition-all" data-a="0.75" data-op="/" data-b="1/4">0.75 ÷ 1/4</button>
+           </div>
+        </div>
+
+        <div class="p-5 bg-primary/5 border border-primary/15 rounded-md">
+          <h3 class="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Mathematical Engine</h3>
+          <p class="text-xs text-ink/70 leading-relaxed">
+            Our calculator uses perfect mathematical algorithms (like the Euclidean Greatest Common Divisor) instead of decimal approximations, ensuring fractions are 100% precise.
+          </p>
+        </div>
+      </aside>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { parseFraction, add, sub, mul, div, formatFraction, formatMixed, formatDecimal, formatPercentage, type Fraction } from '../../utils/fractionLogic';
+
+  const inputA = document.getElementById('frac-a') as HTMLInputElement;
+  const inputB = document.getElementById('frac-b') as HTMLInputElement;
+  const opSelect = document.getElementById('operator') as any;
+  
+  const errA = document.getElementById('err-a');
+  const errB = document.getElementById('err-b');
+  const globalErr = document.getElementById('global-err');
+
+  const outFrac = document.getElementById('out-frac');
+  const outMixed = document.getElementById('out-mixed');
+  const outDec = document.getElementById('out-dec');
+  const outPerc = document.getElementById('out-perc');
+
+  const historyList = document.getElementById('history-list');
+  const clearHistoryBtn = document.getElementById('clear-history');
+
+  // Load history from session storage to avoid polluting forever, but keep it while user is active
+  let history: string[] = JSON.parse(sessionStorage.getItem('fraction-history') || '[]');
+
+  function renderHistory() {
+     if (history.length === 0) {
+        historyList!.innerHTML = '<li class="text-xs text-mute italic">No history yet. Start calculating!</li>';
+        return;
+     }
+     historyList!.innerHTML = history.slice().reverse().map(h => 
+       `<li class="text-sm text-ink bg-canvas-soft px-3 py-2 rounded-sm border border-hairline shadow-sm">${h}</li>`
+     ).join('');
+  }
+
+  function addHistory(a: string, op: string, b: string, result: string) {
+     const str = `${a} ${op} ${b} = ${result}`;
+     // don't add duplicate of last
+     if (history.length > 0 && history[history.length - 1] === str) return;
+     history.push(str);
+     if (history.length > 15) history.shift();
+     sessionStorage.setItem('fraction-history', JSON.stringify(history));
+     renderHistory();
+  }
+
+  clearHistoryBtn?.addEventListener('click', () => {
+     history = [];
+     sessionStorage.removeItem('fraction-history');
+     renderHistory();
+  });
+
+  // Track the last valid inputs to trigger history addition when user stops typing
+  let lastCalcString = "";
+  let typingTimer: number;
+
+  function clearOutputs() {
+     outFrac!.textContent = '—';
+     outMixed!.textContent = '—';
+     outDec!.textContent = '—';
+     outPerc!.textContent = '—';
+  }
+
+  function calculate() {
+    clearTimeout(typingTimer);
+    const valA = inputA.value;
+    const valB = inputB.value;
+    const op = opSelect.value;
+
+    let hasError = false;
+    globalErr!.classList.add('hidden');
+
+    if (!valA && !valB) {
+       errA!.classList.add('hidden');
+       errB!.classList.add('hidden');
+       clearOutputs();
+       return;
+    }
+
+    let fA: Fraction | null = null;
+    let fB: Fraction | null = null;
+
+    if (valA) {
+       fA = parseFraction(valA);
+       if (!fA) {
+          errA!.classList.remove('hidden');
+          hasError = true;
+       } else {
+          errA!.classList.add('hidden');
+       }
+    } else {
+       errA!.classList.add('hidden');
+    }
+
+    if (valB) {
+       fB = parseFraction(valB);
+       if (!fB) {
+          errB!.classList.remove('hidden');
+          hasError = true;
+       } else {
+          errB!.classList.add('hidden');
+       }
+    } else {
+       errB!.classList.add('hidden');
+    }
+
+    if (hasError || !fA || !fB) {
+       clearOutputs();
+       return;
+    }
+
+    // Both valid, calculate!
+    try {
+       let result: Fraction;
+       switch (op) {
+         case '+': result = add(fA, fB); break;
+         case '-': result = sub(fA, fB); break;
+         case '*': result = mul(fA, fB); break;
+         case '/': result = div(fA, fB); break;
+         default: throw new Error("Unknown operator");
+       }
+
+       const strFrac = formatFraction(result);
+       const strMixed = formatMixed(result);
+       const strDec = formatDecimal(result);
+       const strPerc = formatPercentage(result);
+
+       outFrac!.textContent = strFrac;
+       outMixed!.textContent = strMixed || 'N/A';
+       outDec!.textContent = strDec;
+       outPerc!.textContent = strPerc;
+
+       const currentCalcString = `${valA}|${op}|${valB}`;
+       if (currentCalcString !== lastCalcString) {
+          typingTimer = window.setTimeout(() => {
+             addHistory(valA, op, valB, strMixed ? `${strMixed} (or ${strFrac})` : strFrac);
+             lastCalcString = currentCalcString;
+          }, 1500); // 1.5s after they stop typing
+       }
+
+    } catch (e: any) {
+       clearOutputs();
+       globalErr!.textContent = e.message;
+       globalErr!.classList.remove('hidden');
+    }
+  }
+
+  // Events
+  inputA.addEventListener('input', calculate);
+  inputB.addEventListener('input', calculate);
+  opSelect.addEventListener('change', calculate);
+
+  // Example buttons
+  document.querySelectorAll('.example-btn').forEach(btn => {
+     btn.addEventListener('click', (e) => {
+        const t = e.currentTarget as HTMLButtonElement;
+        inputA.value = t.getAttribute('data-a') || '';
+        opSelect.value = t.getAttribute('data-op') || '+';
+        inputB.value = t.getAttribute('data-b') || '';
+        calculate();
+        
+        // Force immediate history save for examples
+        clearTimeout(typingTimer);
+        const resText = outMixed?.textContent !== 'N/A' && outMixed?.textContent !== '—' 
+           ? `${outMixed!.textContent} (or ${outFrac!.textContent})` 
+           : outFrac!.textContent;
+        addHistory(inputA.value, opSelect.value, inputB.value, resText || '');
+        lastCalcString = `${inputA.value}|${opSelect.value}|${inputB.value}`;
+     });
+  });
+
+  // Copy buttons
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const targetId = (e.currentTarget as HTMLButtonElement).getAttribute('data-target');
+      if (targetId) {
+        const el = document.getElementById(targetId);
+        const text = el?.textContent || '';
+        if (text && text !== '—' && text !== 'N/A') {
+          navigator.clipboard.writeText(text);
+          const icon = btn.querySelector('svg');
+          if (icon) {
+            const originalHTML = icon.outerHTML;
+            icon.outerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-500"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+            setTimeout(() => {
+              btn.innerHTML = originalHTML;
+            }, 1500);
+          }
+        }
+      }
+    });
+  });
+
+  // Init
+  renderHistory();
+
+</script>
+
+<style>
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+</style>

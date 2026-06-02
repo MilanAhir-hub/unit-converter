@@ -1,0 +1,51 @@
+---
+import { Icon } from 'astro-icon/components';
+---
+
+<button
+  id="scroll-to-top"
+  class="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full border border-hairline bg-canvas/80 text-ink shadow-lg shadow-black/5 backdrop-blur-md transition-all duration-300 translate-y-4 scale-90 opacity-0 pointer-events-none hover:-translate-y-1 hover:bg-canvas hover:text-primary hover:shadow-xl dark:shadow-white/5 active:scale-95 cursor-pointer"
+  aria-label="Scroll to top"
+>
+  <Icon name="hugeicons:arrow-up-01" class="h-5 w-5 transition-transform duration-300 group-hover:-translate-y-0.5" />
+</button>
+
+<script>
+  function initScrollToTop() {
+    const button = document.getElementById('scroll-to-top');
+    if (!button) return;
+
+    const toggleButtonVisibility = () => {
+      if (window.scrollY > 300) {
+        button.classList.remove('opacity-0', 'pointer-events-none', 'scale-90', 'translate-y-4');
+        button.classList.add('opacity-100', 'pointer-events-auto', 'scale-100', 'translate-y-0');
+      } else {
+        button.classList.add('opacity-0', 'pointer-events-none', 'scale-90', 'translate-y-4');
+        button.classList.remove('opacity-100', 'pointer-events-auto', 'scale-100', 'translate-y-0');
+      }
+    };
+
+    const scrollToTop = () => {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    };
+
+    // Scroll listener
+    window.addEventListener('scroll', toggleButtonVisibility, { passive: true });
+    
+    // Click listener
+    button.addEventListener('click', scrollToTop);
+
+    // Initial check
+    toggleButtonVisibility();
+
+    // Store references on the window to clean up on navigation if necessary, or just rely on garbage collection
+    // since the DOM element will be replaced and GC will take care of listeners.
+  }
+
+  // Support standard loads and Astro View Transitions
+  document.addEventListener('DOMContentLoaded', initScrollToTop);
+  document.addEventListener('astro:page-load', initScrollToTop);
+</script>

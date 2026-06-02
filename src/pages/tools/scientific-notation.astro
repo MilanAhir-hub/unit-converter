@@ -1,0 +1,242 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { Icon } from 'astro-icon/components';
+
+const title = "Scientific Notation Converter";
+const categoryTitle = "Scientific Tools";
+const description = "Convert numbers between standard decimal, scientific notation, engineering notation, and E-notation instantly with high precision.";
+---
+
+<Layout title={`${title} — Free Online Converter`} description={description}>
+  <div class="max-w-6xl mx-auto py-6 sm:py-10 md:py-16 px-4">
+
+    <!-- ── Breadcrumbs ──────────────────────────────────────────────────────── -->
+    <nav class="flex items-center gap-1.5 sm:gap-2 mb-5 sm:mb-6 text-[10px] sm:text-[11px] font-mono text-mute uppercase tracking-widest overflow-x-auto no-scrollbar whitespace-nowrap pb-1" aria-label="Breadcrumb">
+      <a href="/" class="hover:text-ink transition-colors">Home</a>
+      <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
+      <span class="text-body">{categoryTitle}</span>
+      <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
+      <span class="text-ink font-semibold">{title}</span>
+    </nav>
+
+    <!-- ── Page Header ─────────────────────────────────────────────────────── -->
+    <header class="mb-7 sm:mb-10">
+      <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-[-0.04em] text-ink mb-3 sm:mb-4 leading-tight">{title}</h1>
+      <p class="text-body max-w-2xl leading-relaxed text-sm">{description}</p>
+    </header>
+
+    <!-- ── Converter Layout ────────────────────────────────────────────────── -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-10 mb-12 sm:mb-16">
+      
+      <!-- Main Calculator Section -->
+      <div class="lg:col-span-2 space-y-6">
+        
+        <!-- Input Card -->
+        <div class="bg-canvas border border-hairline rounded-md shadow-[0_1px_1px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.04)] overflow-hidden">
+          <div class="p-6 sm:p-8 md:p-10">
+            <label class="block text-[11px] font-semibold font-mono text-mute uppercase tracking-wider mb-4">Enter any number or notation</label>
+            <input
+              id="num-input"
+              type="text"
+              placeholder="e.g. 12345, 1.2e4, or 5.6 x 10^3"
+              autocomplete="off"
+              class="w-full h-14 sm:h-16 px-5 bg-canvas-soft border border-hairline rounded-sm text-xl sm:text-2xl font-semibold text-ink focus:outline-none focus:border-hairline-strong transition-all placeholder:text-mute/50"
+            />
+            <div id="error-message" class="text-red-500 text-xs mt-3 hidden font-medium">Invalid number format</div>
+          </div>
+        </div>
+
+        <!-- Output Cards Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          
+          <!-- Scientific Notation -->
+          <div class="bg-canvas border border-hairline rounded-md p-5 sm:p-6 relative group">
+            <h3 class="text-[11px] font-semibold font-mono text-mute uppercase tracking-wider mb-2">Scientific Notation</h3>
+            <div id="out-scientific" class="text-lg sm:text-xl font-bold text-ink break-all font-mono tracking-tight">—</div>
+            <button class="copy-btn absolute top-4 right-4 text-mute hover:text-ink opacity-0 group-hover:opacity-100 transition-opacity" data-target="out-scientific" aria-label="Copy scientific notation">
+              <Icon name="hugeicons:copy-01" class="w-4 h-4" />
+            </button>
+          </div>
+
+          <!-- Standard Notation -->
+          <div class="bg-canvas border border-hairline rounded-md p-5 sm:p-6 relative group">
+            <h3 class="text-[11px] font-semibold font-mono text-mute uppercase tracking-wider mb-2">Standard Decimal</h3>
+            <div id="out-standard" class="text-lg sm:text-xl font-bold text-ink break-all font-mono tracking-tight">—</div>
+            <button class="copy-btn absolute top-4 right-4 text-mute hover:text-ink opacity-0 group-hover:opacity-100 transition-opacity" data-target="out-standard" aria-label="Copy standard decimal">
+              <Icon name="hugeicons:copy-01" class="w-4 h-4" />
+            </button>
+          </div>
+
+          <!-- Engineering Notation -->
+          <div class="bg-canvas border border-hairline rounded-md p-5 sm:p-6 relative group">
+            <h3 class="text-[11px] font-semibold font-mono text-mute uppercase tracking-wider mb-2">Engineering Notation</h3>
+            <div id="out-engineering" class="text-lg sm:text-xl font-bold text-ink break-all font-mono tracking-tight">—</div>
+            <button class="copy-btn absolute top-4 right-4 text-mute hover:text-ink opacity-0 group-hover:opacity-100 transition-opacity" data-target="out-engineering" aria-label="Copy engineering notation">
+              <Icon name="hugeicons:copy-01" class="w-4 h-4" />
+            </button>
+          </div>
+
+          <!-- E-Notation -->
+          <div class="bg-canvas border border-hairline rounded-md p-5 sm:p-6 relative group">
+            <h3 class="text-[11px] font-semibold font-mono text-mute uppercase tracking-wider mb-2">E-Notation</h3>
+            <div id="out-enotation" class="text-lg sm:text-xl font-bold text-ink break-all font-mono tracking-tight">—</div>
+            <button class="copy-btn absolute top-4 right-4 text-mute hover:text-ink opacity-0 group-hover:opacity-100 transition-opacity" data-target="out-enotation" aria-label="Copy E-notation">
+              <Icon name="hugeicons:copy-01" class="w-4 h-4" />
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <aside class="space-y-6">
+        <div class="p-6 bg-canvas border border-hairline rounded-md">
+          <h3 class="text-base font-semibold text-ink mb-5">How to Use</h3>
+          <div class="space-y-4 text-sm text-body leading-relaxed">
+            <p>Type any number into the input field. You can use standard format (e.g., <code class="font-mono text-xs bg-canvas-soft-2 px-1 py-0.5 rounded text-ink">123000</code>) or E-notation (e.g., <code class="font-mono text-xs bg-canvas-soft-2 px-1 py-0.5 rounded text-ink">1.23e5</code>).</p>
+            <p>The converter will instantly process the number and display it in four different standard mathematical formats.</p>
+          </div>
+        </div>
+
+        <div class="p-5 bg-primary/5 border border-primary/15 rounded-md">
+          <h3 class="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Scientific Accuracy</h3>
+          <p class="text-xs text-ink/70 leading-relaxed">
+            Results use double-precision floating-point arithmetic. Extremely large numbers may lose minor trailing precision, in accordance with IEEE 754 standards.
+          </p>
+        </div>
+      </aside>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  const inputEl = document.getElementById('num-input') as HTMLInputElement;
+  const errEl = document.getElementById('error-message');
+  
+  const outSci = document.getElementById('out-scientific');
+  const outStd = document.getElementById('out-standard');
+  const outEng = document.getElementById('out-engineering');
+  const outEno = document.getElementById('out-enotation');
+
+  // Utility to create HTML for scientific notation (a × 10^b)
+  function formatScientificHTML(mantissa: string, exponent: string) {
+    return `${mantissa} &times; 10<sup>${exponent}</sup>`;
+  }
+
+  function parseInput(val: string): number | null {
+    val = val.trim().toLowerCase();
+    if (!val) return null;
+    
+    // Replace custom "x 10^" syntax with 'e' for native parsing
+    val = val.replace(/\s*(x|\*)\s*10\^/g, 'e');
+    
+    const num = Number(val);
+    if (isNaN(num) || !isFinite(num)) return null;
+    return num;
+  }
+
+  function calculate() {
+    const raw = inputEl.value;
+    if (!raw.trim()) {
+      errEl?.classList.add('hidden');
+      outSci!.innerHTML = '—';
+      outStd!.innerHTML = '—';
+      outEng!.innerHTML = '—';
+      outEno!.innerHTML = '—';
+      return;
+    }
+
+    const num = parseInput(raw);
+    
+    if (num === null) {
+      errEl?.classList.remove('hidden');
+      outSci!.innerHTML = 'Invalid';
+      outStd!.innerHTML = 'Invalid';
+      outEng!.innerHTML = 'Invalid';
+      outEno!.innerHTML = 'Invalid';
+      return;
+    }
+
+    errEl?.classList.add('hidden');
+
+    // 1. E-Notation
+    const eNot = num.toExponential();
+    outEno!.textContent = eNot;
+
+    // 2. Scientific Notation (a × 10^b)
+    const [mantissaStr, expStr] = eNot.split('e');
+    const exp = parseInt(expStr, 10);
+    outSci!.innerHTML = formatScientificHTML(mantissaStr, exp.toString());
+
+    // 3. Standard Decimal
+    let std = num.toLocaleString('fullwide', { useGrouping: false, maximumFractionDigits: 20 });
+    outStd!.textContent = std;
+
+    // 4. Engineering Notation
+    let engMantissa = parseFloat(mantissaStr);
+    let engExp = exp;
+
+    if (num !== 0) {
+      const remainder = engExp % 3;
+      if (remainder === 1 || remainder === -2) {
+        engMantissa *= 10;
+        engExp -= 1;
+      } else if (remainder === 2 || remainder === -1) {
+        engMantissa *= 100;
+        engExp -= 2;
+      }
+    }
+    
+    // Clean up floating point errors in mantissa
+    engMantissa = Number(engMantissa.toPrecision(15));
+    outEng!.innerHTML = formatScientificHTML(engMantissa.toString(), engExp.toString());
+  }
+
+  inputEl?.addEventListener('input', calculate);
+
+  // Copy to clipboard functionality
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const targetId = (e.currentTarget as HTMLButtonElement).getAttribute('data-target');
+      if (targetId) {
+        const el = document.getElementById(targetId);
+        // Extract text content (ignores HTML tags like <sup>)
+        let textToCopy = el?.textContent || '';
+        
+        // If it's scientific or engineering, we should format it nicely for plain text clipboard
+        if (targetId === 'out-scientific' || targetId === 'out-engineering') {
+           const html = el?.innerHTML || '';
+           if (html !== '—' && html !== 'Invalid') {
+             // Extract from format "mantissa &times; 10<sup>exponent</sup>"
+             const tempDiv = document.createElement('div');
+             tempDiv.innerHTML = html;
+             const mantissa = tempDiv.childNodes[0].textContent?.trim() || '';
+             const sup = tempDiv.querySelector('sup')?.textContent || '';
+             if (sup) {
+               textToCopy = `${mantissa} x 10^${sup}`;
+             }
+           }
+        }
+        
+        if (textToCopy && textToCopy !== '—' && textToCopy !== 'Invalid') {
+          navigator.clipboard.writeText(textToCopy);
+          
+          // Visual feedback
+          const icon = btn.querySelector('svg');
+          if (icon) {
+            const originalHTML = icon.outerHTML;
+            icon.outerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-500"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+            setTimeout(() => {
+              btn.innerHTML = originalHTML;
+            }, 1500);
+          }
+        }
+      }
+    });
+  });
+</script>
+
+<style>
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+</style>

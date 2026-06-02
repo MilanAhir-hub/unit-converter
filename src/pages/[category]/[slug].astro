@@ -1,0 +1,563 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { navigationData, isCategory } from '../../data/navigation';
+import { Icon } from 'astro-icon/components';
+import Dropdown from '../../components/Dropdown.astro';
+import {
+  converterCategories,
+  getCategoryBySlug,
+  buildReferenceTable,
+  formatResult,
+  convert,
+} from '../../utils/converter';
+
+export async function getStaticPaths() {
+  const paths: any[] = [];
+
+  // Build paths from navigation data
+  navigationData.forEach((item) => {
+    if (isCategory(item)) {
+      item.items.forEach((subItem) => {
+        const segments = subItem.href.split('/').filter(Boolean);
+        if (segments.length === 2) {
+          paths.push({
+            params: { category: segments[0], slug: segments[1] },
+            props: { title: subItem.title, categoryTitle: item.title, slug: segments[1] }
+          });
+        }
+      });
+    }
+  });
+
+  return paths;
+}
+
+const { title, categoryTitle, slug: propSlug } = Astro.props;
+const { slug: paramSlug } = Astro.params;
+const slug = propSlug || paramSlug || '';
+
+// Look up this converter in our engine
+const converterDef = getCategoryBySlug(slug);
+
+// Fallback units when converter is not yet defined in engine
+const fallbackUnits = [
+  { key: 'unit-a', label: 'Unit A', symbol: 'A', factor: 1 },
+  { key: 'unit-b', label: 'Unit B', symbol: 'B', factor: 1 },
+];
+
+const units        = converterDef?.units ?? fallbackUnits;
+const defaultFrom  = converterDef?.defaultFrom ?? units[0].key;
+const defaultTo    = converterDef?.defaultTo   ?? (units[1]?.key ?? units[0].key);
+const description  = converterDef?.description ??
+  `Free, fast, and accurate ${title.toLowerCase()}. Convert between various units instantly.`;
+
+// Build reference table at build time for the default unit pair
+const refTable = converterDef
+  ? buildReferenceTable(defaultFrom, defaultTo, converterDef)
+  : [];
+
+// Initial result for the default display (input = 1)
+let initialResult = '—';
+if (converterDef) {
+  try {
+    initialResult = formatResult(convert(1, defaultFrom, defaultTo, converterDef));
+  } catch (_) {}
+}
+
+const fromUnit = units.find(u => u.key === defaultFrom);
+const toUnit   = units.find(u => u.key === defaultTo);
+
+// Page FAQ
+const faq = [
+  {
+    q: `How do I use the ${title}?`,
+    a: `Enter your value in the "From" field and select your starting unit. Then choose your target unit. The result is calculated instantly — no button click needed.`
+  },
+  {
+    q: `Is the ${title} accurate?`,
+    a: `Yes. We use industry-standard conversion factors derived from SI and NIST standards to ensure maximum precision for all conversions.`
+  },
+  {
+    q: `Can I swap the conversion direction?`,
+    a: `Absolutely — click the swap button (⇄) in the centre to instantly reverse the conversion direction.`
+  },
+  {
+    q: `Does the converter work offline?`,
+    a: `Yes. All conversion logic runs entirely in your browser. No network request is made when you type a value or change a unit.`
+  },
+];
+
+// Serialize unit definitions to JSON for client-side JS
+const unitsJson   = JSON.stringify(units);
+const categoryJson = JSON.stringify({ slug, isBinary: slug === 'binary' });
+---
+
+<Layout title={`${title} — Free Online ${categoryTitle}`} description={description}>
+  <div class="max-w-6xl mx-auto py-6 sm:py-10 md:py-16 px-4">
+
+    <!-- ── Breadcrumbs ──────────────────────────────────────────────────────── -->
+    <nav class="flex items-center gap-1.5 sm:gap-2 mb-5 sm:mb-6 text-[10px] sm:text-[11px] font-mono text-mute uppercase tracking-widest overflow-x-auto no-scrollbar whitespace-nowrap pb-1" aria-label="Breadcrumb">
+      <a href="/" class="hover:text-ink transition-colors">Home</a>
+      <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
+      <span class="text-body">{categoryTitle}</span>
+      <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
+      <span class="text-ink font-semibold">{title}</span>
+    </nav>
+
+    <!-- ── Page Header ─────────────────────────────────────────────────────── -->
+    <header class="mb-7 sm:mb-10">
+      <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-[-0.04em] text-ink mb-3 sm:mb-4 leading-tight">{title}</h1>
+      <p class="text-body max-w-2xl leading-relaxed text-sm">{description}</p>
+    </header>
+
+    <!-- ── Converter Card ──────────────────────────────────────────────────── -->
+    <div class="bg-canvas border border-hairline rounded-md shadow-[0_1px_1px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.04)] overflow-hidden mb-8 sm:mb-10">
+      <div class="p-4 sm:p-6 md:p-10">
+        <div class="flex flex-col md:grid md:grid-cols-[1fr_auto_1fr] md:items-start gap-4 sm:gap-6 md:gap-8">
+
+          <!-- From -->
+          <div class="space-y-3">
+            <label class="text-[11px] font-semibold font-mono text-mute uppercase tracking-wider">From</label>
+            <div class="flex flex-col gap-3">
+              <input
+                id="from-input"
+                type="number"
+                value="1"
+                placeholder="Enter value"
+                autocomplete="off"
+                class="w-full h-12 sm:h-14 px-4 bg-canvas-soft border border-hairline rounded-sm text-xl sm:text-2xl font-semibold text-ink focus:outline-none focus:border-hairline-strong transition-all"
+              />
+              <Dropdown 
+                id="from-dropdown"
+                options={units}
+                selected={defaultFrom}
+              />
+            </div>
+          </div>
+
+          <!-- Swap -->
+          <div class="flex justify-center md:pt-10">
+            <button
+              id="swap-btn"
+              aria-label="Swap units"
+              class="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-canvas-soft-2 border border-hairline flex items-center justify-center text-ink hover:bg-primary hover:text-on-primary hover:border-primary transition-all rotate-90 md:rotate-0 active:scale-90 touch-manipulation"
+            >
+              <Icon name="hugeicons:exchange-01" class="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
+          </div>
+
+          <!-- To -->
+          <div class="space-y-3">
+            <label class="text-[11px] font-semibold font-mono text-mute uppercase tracking-wider">To</label>
+            <div class="flex flex-col gap-3">
+              <input
+                id="to-input"
+                type="number"
+                readonly
+                value={initialResult}
+                placeholder="Result"
+                class="w-full h-12 sm:h-14 px-4 bg-canvas-soft-2 border border-hairline rounded-sm text-xl sm:text-2xl font-semibold text-primary focus:outline-none transition-all cursor-default select-all"
+              />
+              <Dropdown 
+                id="to-dropdown"
+                options={units}
+                selected={defaultTo}
+              />
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Result summary -->
+        <div class="mt-7 sm:mt-10 pt-6 sm:pt-8 border-t border-hairline flex flex-col items-center text-center">
+          <div class="text-[11px] font-mono text-mute uppercase tracking-widest mb-2">Result</div>
+          <div id="result-summary" class="text-base sm:text-xl md:text-2xl font-bold text-ink mb-1 break-all">
+            1 {fromUnit?.symbol ?? fromUnit?.label} = {initialResult} {toUnit?.symbol ?? toUnit?.label}
+          </div>
+          <div id="formula-line" class="text-xs text-mute mt-1"></div>
+        </div>
+      </div>
+
+      <!-- Card Footer -->
+      <div class="bg-canvas-soft-2 px-4 sm:px-6 py-3 sm:py-3.5 border-t border-hairline flex items-center justify-between text-xs text-mute font-medium gap-3 sm:gap-4">
+        <div class="flex items-center gap-2 min-w-0">
+          <Icon name="hugeicons:information-circle" class="w-4 h-4 shrink-0" />
+          <span id="formula-display" class="truncate">All conversions use industry-standard SI factors.</span>
+        </div>
+        <button
+          id="copy-btn"
+          aria-label="Copy result"
+          class="flex items-center gap-1.5 hover:text-ink transition-colors shrink-0 touch-manipulation min-h-[36px] px-2"
+        >
+          <Icon name="hugeicons:copy-01" class="w-3.5 h-3.5" />
+          <span id="copy-label">Copy</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Two-column content layout ───────────────────────────────────────── -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-10 mb-12 sm:mb-16">
+
+      <!-- Main content -->
+      <div class="lg:col-span-2 space-y-10">
+
+        <!-- How to use -->
+        <section>
+          <h2 class="text-xl font-semibold text-ink mb-4">How to Use the {title}</h2>
+          <div class="space-y-3 text-body text-sm leading-relaxed">
+            <p>
+              Enter any numerical value in the <strong class="text-ink">From</strong> field on the left.
+              The result appears instantly in the <strong class="text-ink">To</strong> field — no button click required.
+            </p>
+            <p>
+              Use the dropdowns to change the source or target unit at any time.
+              Tap the <strong class="text-ink">⇄ swap button</strong> to quickly reverse the conversion direction.
+            </p>
+            <p>
+              Press <strong class="text-ink">Copy</strong> to copy the full result statement to your clipboard, ready to paste anywhere.
+            </p>
+          </div>
+        </section>
+
+        <!-- Reference table -->
+        {refTable.length > 0 && (
+          <section>
+            <h2 class="text-xl font-semibold text-ink mb-4">
+              Common {title} Reference Table
+            </h2>
+            <div class="overflow-x-auto rounded-md border border-hairline -mx-4 sm:mx-0">
+              <table class="w-full text-left text-sm border-collapse">
+                <thead>
+                  <tr class="bg-canvas-soft-2">
+                    <th class="px-4 py-3 font-semibold text-ink border-b border-hairline">Input</th>
+                    <th class="px-4 py-3 font-semibold text-ink border-b border-hairline">Unit</th>
+                    <th class="px-4 py-3 font-semibold text-ink border-b border-hairline">Result</th>
+                    <th class="px-4 py-3 font-semibold text-ink border-b border-hairline">Target</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-hairline">
+                  {refTable.map((row) => (
+                    <tr class="hover:bg-canvas-soft transition-colors">
+                      <td class="px-4 py-3 text-body font-medium">{row.from.split(' ')[0]}</td>
+                      <td class="px-4 py-3 text-mute text-xs">{row.from.split(' ').slice(1).join(' ')}</td>
+                      <td class="px-4 py-3 text-ink font-semibold">{row.result}</td>
+                      <td class="px-4 py-3 text-mute text-xs">{row.to}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        <!-- All units list -->
+        <section>
+          <h2 class="text-xl font-semibold text-ink mb-4">Supported Units</h2>
+          <div class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+            {units.map(unit => (
+              <div class="flex items-center gap-3 p-3 bg-canvas-soft rounded-md border border-hairline">
+                <span class="text-xs font-mono font-bold text-primary bg-primary/8 px-2 py-0.5 rounded min-w-[2.5rem] text-center">
+                  {unit.symbol || '—'}
+                </span>
+                <span class="text-xs text-body leading-snug">{unit.label}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <!-- Sidebar -->
+      <aside class="space-y-6">
+
+        <!-- FAQ -->
+        <div class="p-6 bg-canvas border border-hairline rounded-md">
+          <h3 class="text-base font-semibold text-ink mb-5">Frequently Asked Questions</h3>
+          <div class="space-y-5">
+            {faq.map(item => (
+              <div>
+                <h4 class="text-sm font-semibold text-ink mb-1.5">{item.q}</h4>
+                <p class="text-xs text-body leading-relaxed">{item.a}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <!-- Pro tip -->
+        <div class="p-5 bg-primary/5 border border-primary/15 rounded-md">
+          <h3 class="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Pro Tip</h3>
+          <p class="text-xs text-ink/70 leading-relaxed">
+            You can type decimal values (e.g. <code class="font-mono bg-primary/10 px-1 py-0.5 rounded text-primary">2.54</code>)
+            or very large numbers. The converter handles any numeric input automatically.
+          </p>
+        </div>
+
+        <!-- Related converters -->
+        <div class="p-5 bg-canvas border border-hairline rounded-md">
+          <h3 class="text-base font-semibold text-ink mb-4">Related Converters</h3>
+          <ul class="space-y-2">
+            {converterCategories.slice(0, 8).filter(c => c.slug !== slug).slice(0, 6).map(c => (
+              <li>
+                <a
+                  href={`/unit-converters/${c.slug}`}
+                  class="text-xs text-link hover:underline flex items-center gap-1.5"
+                >
+                  <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
+                  {c.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </aside>
+    </div>
+  </div>
+</Layout>
+
+<!-- ─────────────────────────────────────────────────────────────────────────── -->
+<!-- Client-side Conversion Engine (Vanilla JS — no framework dependency)       -->
+<!-- ─────────────────────────────────────────────────────────────────────────── -->
+<script define:vars={{ unitsJson, categoryJson, defaultFrom, defaultTo, initialResult }}>
+
+// ── Parse server-side data ────────────────────────────────────────────────────
+const UNITS    = JSON.parse(unitsJson);
+const CATEGORY = JSON.parse(categoryJson);
+
+// ── DOM refs ─────────────────────────────────────────────────────────────────
+const fromInput    = document.getElementById('from-input');
+const toInput      = document.getElementById('to-input');
+const fromDropdown = document.getElementById('from-dropdown');
+const toDropdown   = document.getElementById('to-dropdown');
+const swapBtn      = document.getElementById('swap-btn');
+const copyBtn      = document.getElementById('copy-btn');
+const copyLabel    = document.getElementById('copy-label');
+const resultSummary  = document.getElementById('result-summary');
+const formulaDisplay = document.getElementById('formula-display');
+
+function getDropdownValue(dropdown) {
+  return dropdown.getAttribute('data-value') || '';
+}
+
+function setDropdownValue(dropdown, value) {
+  const item = dropdown.querySelector(`.dropdown-item[data-key="${value}"]`);
+  if (item) {
+    item.click();
+  }
+}
+
+// ── Build unit index ──────────────────────────────────────────────────────────
+const unitMap = {};
+UNITS.forEach(u => { unitMap[u.key] = u; });
+
+// ── Conversion logic (mirrors TypeScript engine) ──────────────────────────────
+
+function isBinaryCategory() {
+  return CATEGORY.isBinary === true;
+}
+
+function toBase(unit, value) {
+  return value * (unit.factor ?? 1);
+}
+
+function fromBase(unit, baseValue) {
+  return baseValue / (unit.factor ?? 1);
+}
+
+// Temperature custom logic (non-linear)
+function convertTemp(value, fromKey, toKey) {
+  if (fromKey === 'kelvin' && value < 0) return 'Temperature below absolute zero.';
+  if (fromKey === 'celsius' && value < -273.15) return 'Temperature below absolute zero.';
+  if (fromKey === 'fahrenheit' && value < -459.67) return 'Temperature below absolute zero.';
+  if (fromKey === 'rankine' && value < 0) return 'Temperature below absolute zero.';
+  if (fromKey === 'reaumur' && value < -218.52) return 'Temperature below absolute zero.';
+
+  let celsius;
+  switch (fromKey) {
+    case 'celsius':     celsius = value; break;
+    case 'fahrenheit':  celsius = (value - 32) * 5 / 9; break;
+    case 'kelvin':      celsius = value - 273.15; break;
+    case 'rankine':     celsius = (value - 491.67) * 5 / 9; break;
+    case 'reaumur':     celsius = value * 5 / 4; break;
+    default:            celsius = value;
+  }
+  
+  switch (toKey) {
+    case 'celsius':     return celsius;
+    case 'fahrenheit':  return (celsius * 9 / 5) + 32;
+    case 'kelvin':      return celsius + 273.15;
+    case 'rankine':     return (celsius + 273.15) * 9 / 5;
+    case 'reaumur':     return celsius * 4 / 5;
+    default:            return celsius;
+  }
+}
+
+// Fuel consumption
+function convertFuel(value, fromKey, toKey) {
+  let base;
+  switch (fromKey) {
+    case 'l-per-100km':  base = value; break;
+    case 'km-per-l':     base = 100 / value; break;
+    case 'mpg-us':       base = 235.215 / value; break;
+    case 'mpg-uk':       base = 282.481 / value; break;
+    case 'miles-per-l':  base = 100 / (value * 1.60934); break;
+    default:             base = value;
+  }
+  switch (toKey) {
+    case 'l-per-100km':  return base;
+    case 'km-per-l':     return 100 / base;
+    case 'mpg-us':       return 235.215 / base;
+    case 'mpg-uk':       return 282.481 / base;
+    case 'miles-per-l':  return 100 / (base * 1.60934);
+    default:             return base;
+  }
+}
+
+// Binary / number-base
+function convertBinary(valueStr, fromKey, toKey) {
+  let decimal;
+  switch (fromKey) {
+    case 'binary':      decimal = parseInt(valueStr, 2); break;
+    case 'octal':       decimal = parseInt(valueStr, 8); break;
+    case 'hexadecimal': decimal = parseInt(valueStr, 16); break;
+    default:            decimal = parseInt(valueStr, 10); break;
+  }
+  if (isNaN(decimal)) return 'Invalid input';
+  switch (toKey) {
+    case 'binary':      return decimal.toString(2);
+    case 'octal':       return decimal.toString(8);
+    case 'hexadecimal': return decimal.toString(16).toUpperCase();
+    default:            return decimal.toString(10);
+  }
+}
+
+function doConvert(value, fromKey, toKey) {
+  if (fromKey === toKey) return value;
+  if (CATEGORY.slug === 'temperature')      return convertTemp(value, fromKey, toKey);
+  if (CATEGORY.slug === 'fuel-consumption') return convertFuel(value, fromKey, toKey);
+
+  const from = unitMap[fromKey];
+  const to   = unitMap[toKey];
+  if (!from || !to) return NaN;
+
+  const base = value * (from.factor ?? 1);
+  return base / (to.factor ?? 1);
+}
+
+function formatResult(value) {
+  if (typeof value === 'string') return value;
+  if (isNaN(value) || !isFinite(value)) return '—';
+  if (value === 0) return '0';
+  const abs = Math.abs(value);
+  if (abs !== 0 && (abs >= 1e15 || abs < 1e-6)) {
+    return value.toExponential(4);
+  }
+  return parseFloat(value.toFixed(8)).toString();
+}
+
+// ── Main update function ──────────────────────────────────────────────────────
+function updateConversion() {
+  const rawValue  = fromInput.value.trim();
+  const fromKey   = getDropdownValue(fromDropdown);
+  const toKey     = getDropdownValue(toDropdown);
+  const fromUnit  = unitMap[fromKey];
+  const toUnit    = unitMap[toKey];
+
+  if (rawValue === '' || rawValue === '-') {
+    toInput.value = '';
+    resultSummary.textContent = '—';
+    return;
+  }
+
+  let result;
+  let displayResult;
+
+  if (CATEGORY.slug === 'binary') {
+    displayResult = convertBinary(rawValue, fromKey, toKey);
+    result = displayResult;
+  } else {
+    const numeric = parseFloat(rawValue);
+    if (isNaN(numeric)) {
+      toInput.value = 'Invalid';
+      return;
+    }
+    const converted = doConvert(numeric, fromKey, toKey);
+    displayResult   = formatResult(converted);
+    result = converted;
+  }
+
+  toInput.value = displayResult;
+
+  // Result summary
+  const fromLabel = fromUnit?.symbol || fromUnit?.label || fromKey;
+  const toLabel   = toUnit?.symbol   || toUnit?.label   || toKey;
+  resultSummary.textContent = `${rawValue} ${fromLabel} = ${displayResult} ${toLabel}`;
+
+  // Formula hint
+  if (fromUnit?.factor && toUnit?.factor && CATEGORY.slug !== 'temperature' && CATEGORY.slug !== 'fuel-consumption') {
+    const factor = fromUnit.factor / toUnit.factor;
+    const formatted = parseFloat(factor.toFixed(8)).toString();
+    formulaDisplay.textContent = `Formula: multiply by ${formatted}`;
+  } else {
+    formulaDisplay.textContent = 'All conversions use industry-standard SI factors.';
+  }
+}
+
+// ── Event listeners ───────────────────────────────────────────────────────────
+fromInput.addEventListener('input',  updateConversion);
+fromDropdown.addEventListener('change', updateConversion);
+toDropdown.addEventListener('change',  updateConversion);
+
+swapBtn.addEventListener('click', () => {
+  // Swap dropdown values
+  const fromKey = getDropdownValue(fromDropdown);
+  const toKey = getDropdownValue(toDropdown);
+  
+  setDropdownValue(fromDropdown, toKey);
+  setDropdownValue(toDropdown, fromKey);
+
+  // Swap input/output
+  const prevResult = toInput.value;
+  fromInput.value  = prevResult !== '—' ? prevResult : fromInput.value;
+
+  // Animate swap button
+  swapBtn.style.transform = 'rotate(180deg)';
+  setTimeout(() => { swapBtn.style.transform = ''; }, 300);
+
+  updateConversion();
+});
+
+copyBtn.addEventListener('click', () => {
+  const text = resultSummary.textContent || toInput.value;
+  navigator.clipboard.writeText(text).then(() => {
+    copyLabel.textContent = 'Copied!';
+    setTimeout(() => { copyLabel.textContent = 'Copy'; }, 2000);
+  }).catch(() => {
+    // Fallback for older browsers
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    copyLabel.textContent = 'Copied!';
+    setTimeout(() => { copyLabel.textContent = 'Copy'; }, 2000);
+  });
+});
+
+// Run once on load
+updateConversion();
+</script>
+
+<style>
+  /* Hide number input spinners */
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type=number] { -moz-appearance: textfield; }
+
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  #swap-btn { transition: transform 0.3s ease, background-color 0.2s, border-color 0.2s, color 0.2s; }
+</style>

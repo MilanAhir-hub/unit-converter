@@ -1,0 +1,208 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { Icon } from 'astro-icon/components';
+import Dropdown from '../../components/Dropdown.astro';
+
+const title = "BMR Calculator";
+const categoryTitle = "Health Calculators";
+const description = "Calculate your Basal Metabolic Rate (BMR) using the Mifflin-St Jeor equation to find out how many calories your body burns at rest.";
+
+---
+
+<Layout title={`${title} — Free Online Calculator`} description={description}>
+  <div class="max-w-6xl mx-auto py-6 sm:py-10 md:py-16 px-4">
+
+    <!-- Breadcrumbs -->
+    <nav class="flex items-center gap-1.5 sm:gap-2 mb-5 sm:mb-6 text-[10px] sm:text-[11px] font-mono text-mute uppercase tracking-widest overflow-x-auto no-scrollbar whitespace-nowrap pb-1" aria-label="Breadcrumb">
+      <a href="/" class="hover:text-ink transition-colors">Home</a>
+      <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
+      <span class="text-body">{categoryTitle}</span>
+      <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
+      <span class="text-ink font-semibold">{title}</span>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="mb-7 sm:mb-10">
+      <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-[-0.04em] text-ink mb-3 sm:mb-4 leading-tight">{title}</h1>
+      <p class="text-body max-w-2xl leading-relaxed text-sm">{description}</p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-10 mb-12 sm:mb-16">
+      
+      <!-- Calculator Main -->
+      <div class="lg:col-span-2 space-y-6">
+        
+        <div class="bg-canvas border border-hairline rounded-md shadow-[0_1px_1px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.04)] overflow-hidden">
+          <div class="p-6 sm:p-8 md:p-10 space-y-8">
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
+              
+              <!-- Gender -->
+              <div class="space-y-3 sm:col-span-2">
+                <label class="block text-[11px] font-semibold font-mono text-mute uppercase tracking-wider">Gender</label>
+                <div class="flex gap-4">
+                  <label class="flex-1 cursor-pointer">
+                    <input type="radio" name="gender" value="male" checked class="peer sr-only" />
+                    <div class="h-12 flex items-center justify-center border border-hairline rounded-sm bg-canvas-soft peer-checked:bg-primary/10 peer-checked:border-primary peer-checked:text-primary transition-all font-medium text-ink">
+                      Male
+                    </div>
+                  </label>
+                  <label class="flex-1 cursor-pointer">
+                    <input type="radio" name="gender" value="female" class="peer sr-only" />
+                    <div class="h-12 flex items-center justify-center border border-hairline rounded-sm bg-canvas-soft peer-checked:bg-primary/10 peer-checked:border-primary peer-checked:text-primary transition-all font-medium text-ink">
+                      Female
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Age -->
+              <div class="space-y-3 sm:col-span-2">
+                <label class="block text-[11px] font-semibold font-mono text-mute uppercase tracking-wider">Age (years)</label>
+                <input
+                  id="age-input"
+                  type="number"
+                  value="25"
+                  min="15"
+                  max="80"
+                  class="w-full h-12 px-4 bg-canvas-soft border border-hairline rounded-sm text-lg font-semibold text-ink focus:outline-none focus:border-hairline-strong transition-all"
+                />
+              </div>
+
+              <!-- Height -->
+              <div class="space-y-3">
+                <label class="block text-[11px] font-semibold font-mono text-mute uppercase tracking-wider">Height</label>
+                <div class="flex gap-2">
+                  <input
+                    id="height-input"
+                    type="number"
+                    value="175"
+                    min="1"
+                    class="w-2/3 h-12 px-4 bg-canvas-soft border border-hairline rounded-sm text-lg font-semibold text-ink focus:outline-none focus:border-hairline-strong transition-all"
+                  />
+                  <Dropdown
+                    id="height-unit"
+                    options={[
+                      { key: 'cm', label: 'cm' },
+                      { key: 'in', label: 'inches' }
+                    ]}
+                    selected="cm"
+                    class="w-1/3"
+                  />
+                </div>
+              </div>
+
+              <!-- Weight -->
+              <div class="space-y-3">
+                <label class="block text-[11px] font-semibold font-mono text-mute uppercase tracking-wider">Weight</label>
+                <div class="flex gap-2">
+                  <input
+                    id="weight-input"
+                    type="number"
+                    value="70"
+                    min="1"
+                    class="w-2/3 h-12 px-4 bg-canvas-soft border border-hairline rounded-sm text-lg font-semibold text-ink focus:outline-none focus:border-hairline-strong transition-all"
+                  />
+                  <Dropdown
+                    id="weight-unit"
+                    options={[
+                      { key: 'kg', label: 'kg' },
+                      { key: 'lbs', label: 'lbs' }
+                    ]}
+                    selected="kg"
+                    class="w-1/3"
+                  />
+                </div>
+              </div>
+
+            </div>
+
+            <div id="error-msg" class="text-red-500 text-sm font-medium hidden text-center">Please enter valid values.</div>
+
+            <hr class="border-hairline" />
+
+            <!-- Result -->
+            <div class="bg-canvas-soft-2 border border-hairline p-6 rounded-md text-center">
+               <span class="block text-[10px] font-mono text-mute uppercase tracking-widest mb-2">Your BMR is</span>
+               <div id="bmr-result" class="text-4xl sm:text-5xl font-bold text-ink tracking-tight mb-2">—</div>
+               <div class="text-sm font-medium text-mute">Calories / day</div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Sidebar -->
+      <aside class="space-y-6">
+        <div class="p-6 bg-canvas border border-hairline rounded-md">
+          <h3 class="text-base font-semibold text-ink mb-4">What is BMR?</h3>
+          <p class="text-sm text-body leading-relaxed mb-4">
+            Basal Metabolic Rate is the number of calories required to keep your body functioning at rest. It's also known as your body's metabolism.
+          </p>
+          <div class="text-xs text-mute/80">Uses the Mifflin-St Jeor equation.</div>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { calculateBMR } from '../../utils/calculators/bmrLogic';
+
+  const genderInputs = document.querySelectorAll('input[name="gender"]');
+  const ageInput = document.getElementById('age-input') as HTMLInputElement;
+  const hInput = document.getElementById('height-input') as HTMLInputElement;
+  const hUnit = document.getElementById('height-unit') as any;
+  const wInput = document.getElementById('weight-input') as HTMLInputElement;
+  const wUnit = document.getElementById('weight-unit') as any;
+  
+  const resBmr = document.getElementById('bmr-result');
+  const errMsg = document.getElementById('error-msg');
+
+  function calculate() {
+    const age = parseInt(ageInput.value, 10);
+    const h = parseFloat(hInput.value);
+    const w = parseFloat(wInput.value);
+    const isMale = (document.querySelector('input[name="gender"]:checked') as HTMLInputElement).value === 'male';
+
+    if (isNaN(h) || isNaN(w) || isNaN(age) || h <= 0 || w <= 0 || age <= 0 || age > 150) {
+      resBmr!.textContent = '—';
+      errMsg!.classList.remove('hidden');
+      return;
+    }
+    
+    errMsg!.classList.add('hidden');
+
+    let heightCm = h;
+    if (hUnit.value === 'in') heightCm = h * 2.54;
+
+    let weightKg = w;
+    if (wUnit.value === 'lbs') weightKg = w * 0.45359237;
+
+    const bmr = calculateBMR(weightKg, heightCm, age, isMale);
+
+    if (bmr === null) {
+      resBmr!.textContent = '—';
+      errMsg!.classList.remove('hidden');
+      return;
+    }
+
+    resBmr!.textContent = bmr.toLocaleString('en-US');
+  }
+
+  const elements = [ageInput, hInput, hUnit, wInput, wUnit, ...Array.from(genderInputs)];
+  elements.forEach(el => {
+    el.addEventListener('input', calculate);
+    el.addEventListener('change', calculate);
+  });
+
+  // Initial calculation
+  calculate();
+</script>
+
+<style>
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+</style>

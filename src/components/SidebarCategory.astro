@@ -1,0 +1,32 @@
+---
+import SidebarLink from './SidebarLink.astro';
+import type { NavCategory } from '../data/navigation';
+import { Icon } from 'astro-icon/components';
+
+interface Props {
+  category: NavCategory;
+}
+
+const { category } = Astro.props;
+---
+
+<details class="group mb-4">
+  <summary class="flex items-center justify-between cursor-pointer list-none py-1 mb-1 outline-none">
+    <span class="text-[11px] uppercase tracking-wider font-mono text-mute select-none">{category.title}</span>
+    <Icon 
+      name="hugeicons:arrow-down-01" 
+      class="w-4 h-4 text-hairline-strong transition-transform group-open:rotate-180" 
+    />
+  </summary>
+  <div class="flex flex-col gap-0.5 ml-1 border-l border-hairline pl-2 mt-1">
+    {category.items.map(item => (
+      <SidebarLink title={item.title} href={item.href} icon={item.icon} />
+    ))}
+  </div>
+</details>
+
+<style>
+  details > summary::-webkit-details-marker {
+    display: none;
+  }
+</style>

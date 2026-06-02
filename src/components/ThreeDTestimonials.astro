@@ -1,0 +1,195 @@
+---
+import Marquee from './Marquee.astro';
+
+const testimonials = [
+  {
+    name: 'Emma Lee',
+    username: '@emma',
+    body: 'The absolute fastest unit converter I\'ve ever used. The zero-JS execution budget means categories like temperature and pressure load instantly on mobile!',
+    img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face',
+    country: '🇨🇦 Canada'
+  },
+  {
+    name: 'Alex Rivera',
+    username: '@alexr',
+    body: 'Navigating through the unit converter categories and converting complex physics units like frequency or fuel consumption is incredibly smooth.',
+    img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+    country: '🇺🇸 USA'
+  },
+  {
+    name: 'Sophie Dubois',
+    username: '@sophie_dev',
+    body: 'Highly accurate unit conversions and a super clean, stark minimalist design. It fits right into my daily mechanical engineering workflow.',
+    img: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
+    country: '🇫🇷 France'
+  },
+  {
+    name: 'Kenji Takahashi',
+    username: '@kenjit',
+    body: 'I love the homepage spotlight search! I can start typing any unit conversion like \'inches to cm\' or \'kg to pounds\' and it routes me to the tool instantly.',
+    img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
+    country: '🇯🇵 Japan'
+  },
+  {
+    name: 'Liam Smith',
+    username: '@liams',
+    body: 'The dynamic dark mode makes reading density, volume, and speed conversions late at night very comfortable. Extremely professional unit converter!',
+    img: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+    country: '🇬🇧 UK'
+  },
+  {
+    name: 'Elena Rostova',
+    username: '@elena_codes',
+    body: 'Zero bloat, pure semantic HTML, and fully accessible. This is exactly how a modern, lightning-fast unit converter utility should be built.',
+    img: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face',
+    country: '🇩🇪 Germany'
+  },
+  {
+    name: 'Carlos Mendez',
+    username: '@carlos_m',
+    body: 'The data storage and bandwidth converters are an absolute lifesaver for my daily cloud engineering and server configuration tasks.',
+    img: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=face',
+    country: '🇪🇸 Spain'
+  },
+  {
+    name: 'Amara Okafor',
+    username: '@amara_codes',
+    body: 'It\'s so rare to find a converter that includes complex electrical engineering formulas alongside standard everyday length and weight tools.',
+    img: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=150&h=150&fit=crop&crop=face',
+    country: '🇳🇬 Nigeria'
+  },
+  {
+    name: 'Chloe Chen',
+    username: '@chloec',
+    body: 'As a front-end designer, I am constantly converting pixels to ems and rems. The typography and area tools are extremely accurate and responsive!',
+    img: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&h=150&fit=crop&crop=face',
+    country: '🇸🇬 Singapore'
+  },
+  {
+    name: 'David Müller',
+    username: '@davidm',
+    body: 'The scientific converters handle sub-atomic values and astronomical speed units beautifully. Precision is top-tier!',
+    img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
+    country: '🇨🇭 Switzerland'
+  },
+  {
+    name: 'Zoe Wright',
+    username: '@zoew',
+    body: 'Finding specific converter groups like torque, angle, and force via the megamenu or search is super intuitive. Outstanding user experience.',
+    img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face',
+    country: '🇦🇺 Australia'
+  },
+  {
+    name: 'Marcus Aureli',
+    username: '@marcus_a',
+    body: 'The offline capability of this unit converter is a lifesaver when I\'m out in the field with no connection and need to calculate torque and pressure.',
+    img: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&h=150&fit=crop&crop=face',
+    country: '🇮🇹 Italy'
+  }
+];
+
+// Split testimonials into 4 vertical columns
+const col1 = [testimonials[0], testimonials[4], testimonials[8]];
+const col2 = [testimonials[1], testimonials[5], testimonials[9]];
+const col3 = [testimonials[2], testimonials[6], testimonials[10]];
+const col4 = [testimonials[3], testimonials[7], testimonials[11]];
+---
+
+<section class="py-12 sm:py-16 md:py-24 overflow-hidden relative w-full mt-8 sm:mt-10 md:mt-12">
+  <div class="max-w-6xl mx-auto px-4 text-center mb-16">
+    <span class="font-mono text-xs uppercase tracking-wider text-mute block mb-2">Testimonials</span>
+    <h2 class="font-sans font-bold text-3xl md:text-4xl text-ink tracking-tight">Loved by Developers & Creators</h2>
+    <p class="font-sans text-sm text-body max-w-xl mx-auto mt-3">
+      See why thousands of developers, engineers, and everyday users rely on our converter for lighting-fast calculations and precision.
+    </p>
+  </div>
+  
+  <div class="relative flex h-[360px] sm:h-[440px] md:h-[500px] w-full items-center justify-center overflow-hidden [perspective:1000px]">
+    <!-- 3D projection rotated wrapper -->
+    <div class="flex flex-row items-start gap-4 [transform-style:preserve-3d] [transform:rotateX(18deg)_rotateY(-14deg)_rotateZ(3deg)]">
+      
+      <!-- Track 1: Downward scrolling -->
+      <Marquee vertical className="[--duration:24s] h-[650px] w-[260px] md:w-[280px]" pauseOnHover repeat={4}>
+        {col1.map((item) => (
+          <div class="flex flex-col gap-2 p-4 rounded-xl border border-hairline bg-canvas hover:bg-canvas-soft-2 dark:hover:bg-canvas-soft-2/50 transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer select-none">
+            <div class="flex items-center gap-3">
+              <img src={item.img} alt={item.name} class="w-10 h-10 rounded-full border border-hairline object-cover" loading="lazy" />
+              <div class="flex flex-col min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="font-sans font-semibold text-xs text-ink leading-tight truncate">{item.name}</span>
+                  <span class="text-[10px] text-mute shrink-0">{item.country}</span>
+                </div>
+                <span class="font-mono text-[10px] text-mute truncate">{item.username}</span>
+              </div>
+            </div>
+            <p class="font-sans text-xs text-body leading-relaxed mt-1">{item.body}</p>
+          </div>
+        ))}
+      </Marquee>
+
+      <!-- Track 2: Upward scrolling -->
+      <Marquee vertical reverse className="[--duration:28s] h-[650px] w-[260px] md:w-[280px]" pauseOnHover repeat={4}>
+        {col2.map((item) => (
+          <div class="flex flex-col gap-2 p-4 rounded-xl border border-hairline bg-canvas hover:bg-canvas-soft-2 dark:hover:bg-canvas-soft-2/50 transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer select-none">
+            <div class="flex items-center gap-3">
+              <img src={item.img} alt={item.name} class="w-10 h-10 rounded-full border border-hairline object-cover" loading="lazy" />
+              <div class="flex flex-col min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="font-sans font-semibold text-xs text-ink leading-tight truncate">{item.name}</span>
+                  <span class="text-[10px] text-mute shrink-0">{item.country}</span>
+                </div>
+                <span class="font-mono text-[10px] text-mute truncate">{item.username}</span>
+              </div>
+            </div>
+            <p class="font-sans text-xs text-body leading-relaxed mt-1">{item.body}</p>
+          </div>
+        ))}
+      </Marquee>
+
+      <!-- Track 3: Downward scrolling -->
+      <Marquee vertical className="[--duration:22s] h-[650px] w-[260px] md:w-[280px] hidden md:flex" pauseOnHover repeat={4}>
+        {col3.map((item) => (
+          <div class="flex flex-col gap-2 p-4 rounded-xl border border-hairline bg-canvas hover:bg-canvas-soft-2 dark:hover:bg-canvas-soft-2/50 transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer select-none">
+            <div class="flex items-center gap-3">
+              <img src={item.img} alt={item.name} class="w-10 h-10 rounded-full border border-hairline object-cover" loading="lazy" />
+              <div class="flex flex-col min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="font-sans font-semibold text-xs text-ink leading-tight truncate">{item.name}</span>
+                  <span class="text-[10px] text-mute shrink-0">{item.country}</span>
+                </div>
+                <span class="font-mono text-[10px] text-mute truncate">{item.username}</span>
+              </div>
+            </div>
+            <p class="font-sans text-xs text-body leading-relaxed mt-1">{item.body}</p>
+          </div>
+        ))}
+      </Marquee>
+
+      <!-- Track 4: Upward scrolling -->
+      <Marquee vertical reverse className="[--duration:30s] h-[650px] w-[260px] md:w-[280px] hidden lg:flex" pauseOnHover repeat={4}>
+        {col4.map((item) => (
+          <div class="flex flex-col gap-2 p-4 rounded-xl border border-hairline bg-canvas hover:bg-canvas-soft-2 dark:hover:bg-canvas-soft-2/50 transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer select-none">
+            <div class="flex items-center gap-3">
+              <img src={item.img} alt={item.name} class="w-10 h-10 rounded-full border border-hairline object-cover" loading="lazy" />
+              <div class="flex flex-col min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="font-sans font-semibold text-xs text-ink leading-tight truncate">{item.name}</span>
+                  <span class="text-[10px] text-mute shrink-0">{item.country}</span>
+                </div>
+                <span class="font-mono text-[10px] text-mute truncate">{item.username}</span>
+              </div>
+            </div>
+            <p class="font-sans text-xs text-body leading-relaxed mt-1">{item.body}</p>
+          </div>
+        ))}
+      </Marquee>
+
+    </div>
+
+    <!-- Edge Gradient Fading Overlays (Dark/Light Mode adaptive) -->
+    <div class="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-canvas-soft to-transparent z-10"></div>
+    <div class="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-canvas-soft to-transparent z-10"></div>
+    <div class="pointer-events-none absolute inset-y-0 left-0 w-16 md:w-32 bg-gradient-to-r from-canvas-soft to-transparent z-10"></div>
+    <div class="pointer-events-none absolute inset-y-0 right-0 w-16 md:w-32 bg-gradient-to-l from-canvas-soft to-transparent z-10"></div>
+  </div>
+</section>

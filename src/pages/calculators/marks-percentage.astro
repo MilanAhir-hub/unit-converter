@@ -1,0 +1,153 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { Icon } from 'astro-icon/components';
+
+const title = "Marks Percentage Calculator";
+const categoryTitle = "Math Calculators";
+const description = "Calculate the percentage score of your academic marks or exam results.";
+
+---
+
+<Layout title={`${title} — Free Online Calculator`} description={description}>
+  <div class="max-w-6xl mx-auto py-6 sm:py-10 md:py-16 px-4">
+
+    <!-- Breadcrumbs -->
+    <nav class="flex items-center gap-1.5 sm:gap-2 mb-5 sm:mb-6 text-[10px] sm:text-[11px] font-mono text-mute uppercase tracking-widest overflow-x-auto no-scrollbar whitespace-nowrap pb-1" aria-label="Breadcrumb">
+      <a href="/" class="hover:text-ink transition-colors">Home</a>
+      <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
+      <span class="text-body">{categoryTitle}</span>
+      <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
+      <span class="text-ink font-semibold">{title}</span>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="mb-7 sm:mb-10">
+      <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-[-0.04em] text-ink mb-3 sm:mb-4 leading-tight">{title}</h1>
+      <p class="text-body max-w-2xl leading-relaxed text-sm">{description}</p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-10 mb-12 sm:mb-16">
+      
+      <!-- Calculator Main -->
+      <div class="lg:col-span-2 space-y-6">
+        
+        <div class="bg-canvas border border-hairline rounded-md shadow-[0_1px_1px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.04)] overflow-hidden">
+          <div class="p-6 sm:p-8 md:p-10 space-y-8">
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
+              
+              <!-- Obtained Marks -->
+              <div class="space-y-3">
+                <label class="block text-[11px] font-semibold font-mono text-mute uppercase tracking-wider">Marks Obtained</label>
+                <input
+                  id="obtained-input"
+                  type="number"
+                  value="450"
+                  min="0"
+                  class="w-full h-12 px-4 bg-canvas-soft border border-hairline rounded-sm text-lg font-semibold text-ink focus:outline-none focus:border-hairline-strong transition-all"
+                />
+              </div>
+
+              <!-- Maximum Marks -->
+              <div class="space-y-3">
+                <label class="block text-[11px] font-semibold font-mono text-mute uppercase tracking-wider">Maximum Marks</label>
+                <input
+                  id="maximum-input"
+                  type="number"
+                  value="500"
+                  min="1"
+                  class="w-full h-12 px-4 bg-canvas-soft border border-hairline rounded-sm text-lg font-semibold text-ink focus:outline-none focus:border-hairline-strong transition-all"
+                />
+              </div>
+
+            </div>
+
+            <div id="error-msg" class="text-red-500 text-sm font-medium hidden text-center">Invalid values. Obtained marks cannot exceed maximum marks.</div>
+
+            <hr class="border-hairline" />
+
+            <!-- Result -->
+            <div class="bg-canvas-soft-2 border border-hairline p-6 rounded-md text-center">
+               <span class="block text-[10px] font-mono text-mute uppercase tracking-widest mb-2">Final Percentage</span>
+               <div id="res-percentage" class="text-5xl font-bold text-primary tracking-tight">90%</div>
+               
+               <div id="res-grade" class="mt-4 inline-flex px-3 py-1 rounded-full text-sm font-semibold tracking-wider uppercase bg-green-500/10 text-green-600 border border-green-500/20">
+                 A+ Grade
+               </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Sidebar -->
+      <aside class="space-y-6">
+        <div class="p-6 bg-canvas border border-hairline rounded-md">
+          <h3 class="text-base font-semibold text-ink mb-4">Formula</h3>
+          <p class="text-sm text-body leading-relaxed mb-4">
+            (Obtained / Maximum) × 100
+          </p>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { calculateMarksPercentage } from '../../utils/calculators/percentageLogic';
+
+  const oInput = document.getElementById('obtained-input') as HTMLInputElement;
+  const mInput = document.getElementById('maximum-input') as HTMLInputElement;
+  
+  const resPercentage = document.getElementById('res-percentage');
+  const resGrade = document.getElementById('res-grade');
+  const errMsg = document.getElementById('error-msg');
+
+  function calculate() {
+    const obtained = parseFloat(oInput.value);
+    const maximum = parseFloat(mInput.value);
+
+    if (isNaN(obtained) || isNaN(maximum) || maximum <= 0 || obtained < 0 || obtained > maximum) {
+      resPercentage!.textContent = '—';
+      resGrade!.classList.add('hidden');
+      errMsg!.classList.remove('hidden');
+      return;
+    }
+    
+    errMsg!.classList.add('hidden');
+
+    const res = calculateMarksPercentage(obtained, maximum);
+
+    if (res === null) {
+      resPercentage!.textContent = '—';
+      resGrade!.classList.add('hidden');
+      return;
+    }
+
+    resPercentage!.textContent = res.toString() + '%';
+    resGrade!.classList.remove('hidden');
+
+    // Basic grading logic
+    let grade = '';
+    let colorClass = '';
+    if (res >= 90) { grade = 'A+ Grade'; colorClass = 'bg-green-500/10 text-green-600 border-green-500/20'; }
+    else if (res >= 80) { grade = 'A Grade'; colorClass = 'bg-green-500/10 text-green-600 border-green-500/20'; }
+    else if (res >= 70) { grade = 'B Grade'; colorClass = 'bg-blue-500/10 text-blue-600 border-blue-500/20'; }
+    else if (res >= 60) { grade = 'C Grade'; colorClass = 'bg-orange-500/10 text-orange-600 border-orange-500/20'; }
+    else if (res >= 50) { grade = 'D Grade'; colorClass = 'bg-orange-500/10 text-orange-600 border-orange-500/20'; }
+    else { grade = 'F Grade (Fail)'; colorClass = 'bg-red-500/10 text-red-600 border-red-500/20'; }
+
+    resGrade!.className = `mt-4 inline-flex px-3 py-1 rounded-full text-sm font-semibold tracking-wider uppercase border ${colorClass}`;
+    resGrade!.textContent = grade;
+  }
+
+  [oInput, mInput].forEach(el => el.addEventListener('input', calculate));
+  calculate();
+</script>
+
+<style>
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+</style>

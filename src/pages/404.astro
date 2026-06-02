@@ -1,0 +1,51 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { Icon } from 'astro-icon/components';
+---
+
+<Layout>
+  <div class="flex flex-col items-center justify-center min-h-[70vh] text-center px-4">
+    <div class="relative mb-8">
+        <div class="text-[120px] md:text-[160px] font-bold text-canvas-soft-2 select-none leading-none">404</div>
+        <div class="absolute inset-0 flex items-center justify-center">
+            <div class="w-20 h-20 bg-canvas border border-hairline rounded-md shadow-xl flex items-center justify-center rotate-12 group hover:rotate-0 transition-transform duration-500">
+                <Icon name="hugeicons:search-02" class="w-10 h-10 text-primary" />
+            </div>
+        </div>
+    </div>
+    
+    <h1 class="text-3xl md:text-4xl font-semibold tracking-[-0.04em] text-ink mb-4">Page Not Found</h1>
+    <p class="text-body max-w-md mx-auto mb-10 leading-relaxed">
+      The page you are looking for might have been removed, had its name changed, or is temporarily unavailable. Let's get you back on track.
+    </p>
+
+    <div class="flex flex-col sm:flex-row items-center gap-4">
+        <a 
+            href="/" 
+            class="h-11 px-6 bg-primary text-on-primary font-medium rounded-sm hover:bg-primary/90 transition-all flex items-center gap-2 shadow-sm"
+        >
+            <Icon name="hugeicons:home-01" class="w-4 h-4" />
+            Back to Home
+        </a>
+        <a 
+            href="/contact" 
+            class="h-11 px-6 bg-canvas border border-hairline text-ink font-medium rounded-sm hover:bg-canvas-soft-2 transition-all flex items-center gap-2"
+        >
+            <Icon name="hugeicons:customer-service" class="w-4 h-4" />
+            Report Issue
+        </a>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="mt-16 pt-8 border-t border-hairline w-full max-w-2xl">
+        <p class="text-[11px] font-mono text-mute uppercase tracking-widest mb-6">Popular Converters</p>
+        <div class="flex flex-wrap justify-center gap-x-6 gap-y-3">
+            <a href="/unit-converters/length" class="text-sm text-body hover:text-ink transition-colors">Length</a>
+            <a href="/unit-converters/weight-mass" class="text-sm text-body hover:text-ink transition-colors">Weight</a>
+            <a href="/unit-converters/temperature" class="text-sm text-body hover:text-ink transition-colors">Temperature</a>
+            <a href="/unit-converters/currency" class="text-sm text-body hover:text-ink transition-colors">Currency</a>
+            <a href="/unit-converters/time" class="text-sm text-body hover:text-ink transition-colors">Time</a>
+        </div>
+    </div>
+  </div>
+</Layout>

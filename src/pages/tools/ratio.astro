@@ -1,0 +1,309 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { Icon } from 'astro-icon/components';
+
+const title = "Ratio Calculator";
+const categoryTitle = "Scientific Tools";
+const description = "Simplify ratios or solve proportions instantly. Leave one field empty to calculate it, or enter two values to simplify.";
+---
+
+<Layout title={`${title} — Free Online Calculator`} description={description}>
+  <div class="max-w-6xl mx-auto py-6 sm:py-10 md:py-16 px-4">
+
+    <!-- ── Breadcrumbs ──────────────────────────────────────────────────────── -->
+    <nav class="flex items-center gap-1.5 sm:gap-2 mb-5 sm:mb-6 text-[10px] sm:text-[11px] font-mono text-mute uppercase tracking-widest overflow-x-auto no-scrollbar whitespace-nowrap pb-1" aria-label="Breadcrumb">
+      <a href="/" class="hover:text-ink transition-colors">Home</a>
+      <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
+      <span class="text-body">{categoryTitle}</span>
+      <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
+      <span class="text-ink font-semibold">{title}</span>
+    </nav>
+
+    <!-- ── Page Header ─────────────────────────────────────────────────────── -->
+    <header class="mb-7 sm:mb-10">
+      <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-[-0.04em] text-ink mb-3 sm:mb-4 leading-tight">{title}</h1>
+      <p class="text-body max-w-2xl leading-relaxed text-sm">{description}</p>
+    </header>
+
+    <!-- ── Converter Layout ────────────────────────────────────────────────── -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-10 mb-12 sm:mb-16">
+      
+      <!-- Main Calculator Section -->
+      <div class="lg:col-span-2 space-y-6">
+        
+        <div class="bg-canvas border border-hairline rounded-md shadow-[0_1px_1px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.04)] overflow-hidden">
+          <div class="p-6 sm:p-8 md:p-12">
+            
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10">
+              
+              <!-- Ratio 1 -->
+              <div class="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+                <input
+                  id="val-a"
+                  type="number"
+                  placeholder="A"
+                  class="w-full sm:w-28 h-16 text-center px-2 bg-canvas-soft border border-hairline rounded-sm text-2xl font-semibold text-ink focus:outline-none focus:border-primary transition-all appearance-none shadow-inner"
+                />
+                <span class="text-3xl font-bold text-mute">:</span>
+                <input
+                  id="val-b"
+                  type="number"
+                  placeholder="B"
+                  class="w-full sm:w-28 h-16 text-center px-2 bg-canvas-soft border border-hairline rounded-sm text-2xl font-semibold text-ink focus:outline-none focus:border-primary transition-all appearance-none shadow-inner"
+                />
+              </div>
+
+              <!-- Equals -->
+              <div class="text-3xl font-semibold text-mute">=</div>
+
+              <!-- Ratio 2 -->
+              <div class="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+                <input
+                  id="val-c"
+                  type="number"
+                  placeholder="C"
+                  class="w-full sm:w-28 h-16 text-center px-2 bg-canvas-soft border border-hairline rounded-sm text-2xl font-semibold text-ink focus:outline-none focus:border-primary transition-all appearance-none shadow-inner"
+                />
+                <span class="text-3xl font-bold text-mute">:</span>
+                <input
+                  id="val-d"
+                  type="number"
+                  placeholder="D"
+                  class="w-full sm:w-28 h-16 text-center px-2 bg-canvas-soft border border-hairline rounded-sm text-2xl font-semibold text-ink focus:outline-none focus:border-primary transition-all appearance-none shadow-inner"
+                />
+              </div>
+
+            </div>
+            
+            <!-- Dynamic Message -->
+            <div id="status-message" class="text-center mt-10 text-sm font-medium text-mute/80 h-6">
+              Enter values to calculate.
+            </div>
+
+            <!-- Action buttons -->
+            <div class="flex justify-center mt-6">
+              <button id="clear-btn" class="px-6 py-2.5 text-sm font-semibold text-ink bg-canvas-soft-2 hover:bg-canvas-soft border border-hairline rounded-full transition-colors flex items-center gap-2 touch-manipulation">
+                <Icon name="hugeicons:refresh" class="w-4 h-4" />
+                Clear All
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <aside class="space-y-6">
+        <div class="p-6 bg-canvas border border-hairline rounded-md">
+          <h3 class="text-base font-semibold text-ink mb-5">How to Use</h3>
+          <div class="space-y-4 text-sm text-body leading-relaxed">
+            <p><strong>Solve a Proportion:</strong> Enter any 3 values and leave the 4th field empty. The calculator will automatically solve for the missing variable using cross-multiplication.</p>
+            <p><strong>Simplify a Ratio:</strong> Enter two values on the left (<code class="bg-canvas-soft px-1 rounded text-ink text-xs font-mono">A</code> and <code class="bg-canvas-soft px-1 rounded text-ink text-xs font-mono">B</code>) and leave the right side empty. The fully simplified ratio will appear on the right.</p>
+          </div>
+        </div>
+
+        <div class="p-5 bg-primary/5 border border-primary/15 rounded-md">
+          <h3 class="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Mathematical Principle</h3>
+          <p class="text-xs text-ink/70 leading-relaxed">
+            A proportion asserts that two ratios are equal: <strong>A / B = C / D</strong>. By cross-multiplying, we know that <strong>A × D = B × C</strong>, allowing us to find any missing variable.
+          </p>
+        </div>
+      </aside>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  const aEl = document.getElementById('val-a') as HTMLInputElement;
+  const bEl = document.getElementById('val-b') as HTMLInputElement;
+  const cEl = document.getElementById('val-c') as HTMLInputElement;
+  const dEl = document.getElementById('val-d') as HTMLInputElement;
+  const statusEl = document.getElementById('status-message');
+  const clearBtn = document.getElementById('clear-btn');
+
+  // Track user-entered values vs auto-calculated values
+  let userFlags = { a: false, b: false, c: false, d: false };
+
+  function gcd(a: number, b: number): number {
+    a = Math.abs(a);
+    b = Math.abs(b);
+    while (b) {
+      let t = b;
+      b = a % b;
+      a = t;
+    }
+    return a;
+  }
+
+  function markCalculated(el: HTMLInputElement) {
+    el.classList.add('text-primary');
+    el.classList.remove('text-ink');
+    el.classList.add('bg-primary/5');
+    el.classList.add('border-primary/30');
+  }
+
+  function markNormal(el: HTMLInputElement) {
+    el.classList.remove('text-primary');
+    el.classList.add('text-ink');
+    el.classList.remove('bg-primary/5');
+    el.classList.remove('border-primary/30');
+  }
+
+  function parse(val: string): number | null {
+    if (val.trim() === '') return null;
+    const n = parseFloat(val);
+    if (isNaN(n)) return null;
+    return n;
+  }
+
+  function calculate() {
+    const a = parse(aEl.value);
+    const b = parse(bEl.value);
+    const c = parse(cEl.value);
+    const d = parse(dEl.value);
+
+    // Count how many values are actively typed by the user (not auto-filled)
+    const hasA = userFlags.a && a !== null;
+    const hasB = userFlags.b && b !== null;
+    const hasC = userFlags.c && c !== null;
+    const hasD = userFlags.d && d !== null;
+
+    const count = (hasA?1:0) + (hasB?1:0) + (hasC?1:0) + (hasD?1:0);
+
+    // Reset styles
+    [aEl, bEl, cEl, dEl].forEach(markNormal);
+
+    if (count < 2) {
+      statusEl!.textContent = 'Enter at least 2 values...';
+      return;
+    }
+
+    // Simplify mode: User entered A and B, left C and D empty
+    if (hasA && hasB && !hasC && !hasD) {
+      if (b === 0) {
+         statusEl!.textContent = 'Error: Division by zero';
+         return;
+      }
+      
+      // If integer
+      if (Number.isInteger(a) && Number.isInteger(b)) {
+        const divisor = gcd(a, b);
+        const simpC = a / divisor;
+        const simpD = b / divisor;
+        cEl.value = simpC.toString();
+        dEl.value = simpD.toString();
+        markCalculated(cEl);
+        markCalculated(dEl);
+        statusEl!.textContent = 'Ratio simplified using Greatest Common Divisor.';
+      } else {
+        // Decimal ratio simplification (scale to int first, up to 4 decimal places)
+        const multiplier = 10000;
+        const intA = Math.round(a * multiplier);
+        const intB = Math.round(b * multiplier);
+        const divisor = gcd(intA, intB);
+        cEl.value = (intA / divisor).toString();
+        dEl.value = (intB / divisor).toString();
+        markCalculated(cEl);
+        markCalculated(dEl);
+        statusEl!.textContent = 'Decimal ratio scaled and simplified.';
+      }
+      return;
+    }
+
+    // Cross-multiplication mode: 3 values present
+    if (count === 3) {
+      if (!hasA && hasB && hasC && hasD) {
+        if (d === 0) { statusEl!.textContent = 'Error: Division by zero'; return; }
+        const resA = (b * c) / d;
+        aEl.value = parseFloat(resA.toFixed(6)).toString();
+        markCalculated(aEl);
+        statusEl!.textContent = 'Solved for A using cross-multiplication.';
+      } 
+      else if (hasA && !hasB && hasC && hasD) {
+        if (c === 0) { statusEl!.textContent = 'Error: Division by zero'; return; }
+        const resB = (a * d) / c;
+        bEl.value = parseFloat(resB.toFixed(6)).toString();
+        markCalculated(bEl);
+        statusEl!.textContent = 'Solved for B using cross-multiplication.';
+      }
+      else if (hasA && hasB && !hasC && hasD) {
+        if (b === 0) { statusEl!.textContent = 'Error: Division by zero'; return; }
+        const resC = (a * d) / b;
+        cEl.value = parseFloat(resC.toFixed(6)).toString();
+        markCalculated(cEl);
+        statusEl!.textContent = 'Solved for C using cross-multiplication.';
+      }
+      else if (hasA && hasB && hasC && !hasD) {
+        if (a === 0) { statusEl!.textContent = 'Error: Division by zero'; return; }
+        const resD = (b * c) / a;
+        dEl.value = parseFloat(resD.toFixed(6)).toString();
+        markCalculated(dEl);
+        statusEl!.textContent = 'Solved for D using cross-multiplication.';
+      }
+      return;
+    }
+
+    if (count === 4) {
+      // Validate
+      if (b === 0 || d === 0) {
+        statusEl!.textContent = 'Error: Division by zero';
+        return;
+      }
+      const diff = Math.abs((a * d) - (b * c));
+      if (diff < 0.0001) {
+        statusEl!.textContent = 'Proportion is mathematically valid.';
+        statusEl!.classList.add('text-green-600');
+      } else {
+        statusEl!.textContent = 'Proportion is invalid (A:B ≠ C:D).';
+        statusEl!.classList.add('text-red-500');
+      }
+    }
+  }
+
+  // Handle Input Events
+  function attachEvent(el: HTMLInputElement, key: 'a'|'b'|'c'|'d') {
+    el.addEventListener('input', () => {
+      // If user clears the input manually, remove flag
+      if (el.value.trim() === '') {
+        userFlags[key] = false;
+        
+        // If we cleared a value, we should also clear any auto-calculated values
+        // to prevent confusing state
+        if (key === 'a' || key === 'b') {
+          if (!userFlags.c) cEl.value = '';
+          if (!userFlags.d) dEl.value = '';
+        } else {
+          if (!userFlags.a) aEl.value = '';
+          if (!userFlags.b) bEl.value = '';
+        }
+      } else {
+        userFlags[key] = true;
+      }
+      statusEl!.className = 'text-center mt-10 text-sm font-medium text-mute/80 h-6'; // reset colors
+      calculate();
+    });
+  }
+
+  attachEvent(aEl, 'a');
+  attachEvent(bEl, 'b');
+  attachEvent(cEl, 'c');
+  attachEvent(dEl, 'd');
+
+  clearBtn?.addEventListener('click', () => {
+    [aEl, bEl, cEl, dEl].forEach(el => { el.value = ''; markNormal(el); });
+    userFlags = { a: false, b: false, c: false, d: false };
+    statusEl!.textContent = 'Enter values to calculate.';
+    statusEl!.className = 'text-center mt-10 text-sm font-medium text-mute/80 h-6';
+  });
+
+</script>
+
+<style>
+  /* Hide number input spinners */
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type=number] { -moz-appearance: textfield; }
+</style>

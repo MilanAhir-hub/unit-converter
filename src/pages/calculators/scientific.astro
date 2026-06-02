@@ -1,0 +1,210 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { Icon } from 'astro-icon/components';
+
+const title = "Scientific Calculator";
+const categoryTitle = "Math Calculators";
+const description = "Advanced scientific calculator featuring trigonometric functions, logarithms, exponents, and basic arithmetic.";
+
+---
+
+<Layout title={`${title} — Free Online Calculator`} description={description}>
+  <div class="max-w-4xl mx-auto py-6 sm:py-10 md:py-16 px-4">
+
+    <!-- Breadcrumbs -->
+    <nav class="flex items-center gap-1.5 sm:gap-2 mb-5 sm:mb-6 text-[10px] sm:text-[11px] font-mono text-mute uppercase tracking-widest overflow-x-auto no-scrollbar whitespace-nowrap pb-1" aria-label="Breadcrumb">
+      <a href="/" class="hover:text-ink transition-colors">Home</a>
+      <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
+      <span class="text-body">{categoryTitle}</span>
+      <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
+      <span class="text-ink font-semibold">{title}</span>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="mb-7 sm:mb-10 text-center">
+      <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-[-0.04em] text-ink mb-3 sm:mb-4 leading-tight">{title}</h1>
+      <p class="text-body max-w-2xl mx-auto leading-relaxed text-sm">{description}</p>
+    </header>
+
+    <div class="max-w-md mx-auto">
+      
+      <div class="bg-canvas-soft border border-hairline rounded-xl shadow-lg overflow-hidden p-4 sm:p-6">
+        
+        <!-- Screen -->
+        <div class="bg-canvas border border-hairline rounded-lg p-4 mb-6 text-right space-y-2 h-24 flex flex-col justify-end overflow-hidden relative">
+          <div id="calc-history" class="text-sm text-mute font-mono truncate w-full absolute top-3 right-4 pl-4 text-right"></div>
+          <div id="calc-screen" class="text-4xl sm:text-5xl font-semibold text-ink font-mono tracking-tight truncate w-full mt-auto">0</div>
+        </div>
+
+        <!-- Keypad -->
+        <div class="grid grid-cols-4 gap-2 sm:gap-3">
+          <!-- Row 1: Sci Funcs -->
+          <button class="calc-btn sci text-primary bg-primary/5 hover:bg-primary/10" data-val="Math.sin(">sin</button>
+          <button class="calc-btn sci text-primary bg-primary/5 hover:bg-primary/10" data-val="Math.cos(">cos</button>
+          <button class="calc-btn sci text-primary bg-primary/5 hover:bg-primary/10" data-val="Math.tan(">tan</button>
+          <button class="calc-btn action text-red-500 bg-red-500/5 hover:bg-red-500/10" data-action="clear">AC</button>
+          
+          <!-- Row 2: Sci Funcs -->
+          <button class="calc-btn sci text-primary bg-primary/5 hover:bg-primary/10" data-val="Math.log10(">log</button>
+          <button class="calc-btn sci text-primary bg-primary/5 hover:bg-primary/10" data-val="Math.log(">ln</button>
+          <button class="calc-btn sci text-primary bg-primary/5 hover:bg-primary/10" data-val="Math.sqrt(">√</button>
+          <button class="calc-btn action text-orange-500 bg-orange-500/5 hover:bg-orange-500/10" data-action="backspace">⌫</button>
+          
+          <!-- Row 3: Math -->
+          <button class="calc-btn sci text-primary bg-primary/5 hover:bg-primary/10" data-val="**">^</button>
+          <button class="calc-btn op text-ink bg-canvas hover:bg-canvas-soft border border-hairline" data-val="(">(</button>
+          <button class="calc-btn op text-ink bg-canvas hover:bg-canvas-soft border border-hairline" data-val=")">)</button>
+          <button class="calc-btn op text-ink bg-canvas hover:bg-canvas-soft border border-hairline text-xl" data-val="/">÷</button>
+          
+          <!-- Row 4: Numbers -->
+          <button class="calc-btn num text-ink bg-canvas hover:bg-canvas-soft border border-hairline font-semibold text-lg" data-val="7">7</button>
+          <button class="calc-btn num text-ink bg-canvas hover:bg-canvas-soft border border-hairline font-semibold text-lg" data-val="8">8</button>
+          <button class="calc-btn num text-ink bg-canvas hover:bg-canvas-soft border border-hairline font-semibold text-lg" data-val="9">9</button>
+          <button class="calc-btn op text-ink bg-canvas hover:bg-canvas-soft border border-hairline text-xl" data-val="*">×</button>
+          
+          <!-- Row 5: Numbers -->
+          <button class="calc-btn num text-ink bg-canvas hover:bg-canvas-soft border border-hairline font-semibold text-lg" data-val="4">4</button>
+          <button class="calc-btn num text-ink bg-canvas hover:bg-canvas-soft border border-hairline font-semibold text-lg" data-val="5">5</button>
+          <button class="calc-btn num text-ink bg-canvas hover:bg-canvas-soft border border-hairline font-semibold text-lg" data-val="6">6</button>
+          <button class="calc-btn op text-ink bg-canvas hover:bg-canvas-soft border border-hairline text-xl" data-val="-">−</button>
+          
+          <!-- Row 6: Numbers -->
+          <button class="calc-btn num text-ink bg-canvas hover:bg-canvas-soft border border-hairline font-semibold text-lg" data-val="1">1</button>
+          <button class="calc-btn num text-ink bg-canvas hover:bg-canvas-soft border border-hairline font-semibold text-lg" data-val="2">2</button>
+          <button class="calc-btn num text-ink bg-canvas hover:bg-canvas-soft border border-hairline font-semibold text-lg" data-val="3">3</button>
+          <button class="calc-btn op text-ink bg-canvas hover:bg-canvas-soft border border-hairline text-xl" data-val="+">+</button>
+          
+          <!-- Row 7: Bottom -->
+          <button class="calc-btn sci text-primary bg-primary/5 hover:bg-primary/10" data-val="Math.PI">π</button>
+          <button class="calc-btn num text-ink bg-canvas hover:bg-canvas-soft border border-hairline font-semibold text-lg" data-val="0">0</button>
+          <button class="calc-btn num text-ink bg-canvas hover:bg-canvas-soft border border-hairline font-semibold text-lg" data-val=".">.</button>
+          <button class="calc-btn action text-white bg-primary hover:bg-primary-hover shadow-sm font-bold text-xl" data-action="calculate">=</button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</Layout>
+
+<script>
+  const screen = document.getElementById('calc-screen')!;
+  const history = document.getElementById('calc-history')!;
+  const btns = document.querySelectorAll('.calc-btn');
+
+  // Add base tailwind classes dynamically
+  btns.forEach(btn => {
+    btn.classList.add('h-14', 'rounded-md', 'transition-all', 'flex', 'items-center', 'justify-center');
+  });
+
+  let expression = '';
+  let justCalculated = false;
+
+  function updateDisplay() {
+    // Show a more readable version on screen
+    let displayExp = expression
+      .replace(/Math\.sin\(/g, 'sin(')
+      .replace(/Math\.cos\(/g, 'cos(')
+      .replace(/Math\.tan\(/g, 'tan(')
+      .replace(/Math\.log10\(/g, 'log(')
+      .replace(/Math\.log\(/g, 'ln(')
+      .replace(/Math\.sqrt\(/g, '√(')
+      .replace(/Math\.PI/g, 'π')
+      .replace(/\*\*/g, '^')
+      .replace(/\*/g, '×')
+      .replace(/\//g, '÷');
+
+    screen.textContent = displayExp || '0';
+  }
+
+  function handleInput(val: string) {
+    if (justCalculated && !['+', '-', '*', '/', '**'].includes(val)) {
+      expression = '';
+    }
+    justCalculated = false;
+    expression += val;
+    updateDisplay();
+  }
+
+  function calculate() {
+    if (!expression) return;
+    try {
+      // Safe execution using Function constructor
+      // Math functions are already prefixed with Math.
+      // E.g. Math.sin(Math.PI)
+      
+      // Auto-close missing parentheses
+      let openParenCount = (expression.match(/\(/g) || []).length;
+      let closeParenCount = (expression.match(/\)/g) || []).length;
+      while (openParenCount > closeParenCount) {
+        expression += ')';
+        closeParenCount++;
+      }
+
+      const rawFunc = new Function('return ' + expression);
+      const result = rawFunc();
+
+      if (typeof result !== 'number' || isNaN(result)) {
+        throw new Error("Invalid");
+      }
+
+      // Format result to avoid huge precision issues
+      let finalResult = Number(result.toFixed(10)).toString();
+      
+      history.textContent = screen.textContent + ' =';
+      expression = finalResult;
+      updateDisplay();
+      justCalculated = true;
+    } catch (err) {
+      history.textContent = screen.textContent + ' =';
+      screen.textContent = 'Error';
+      expression = '';
+      justCalculated = true;
+    }
+  }
+
+  btns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const target = e.currentTarget as HTMLButtonElement;
+      
+      if (target.dataset.action) {
+        if (target.dataset.action === 'clear') {
+          expression = '';
+          history.textContent = '';
+          updateDisplay();
+        } else if (target.dataset.action === 'backspace') {
+          if (justCalculated) {
+             history.textContent = '';
+             justCalculated = false;
+          }
+          // Basic backspace logic (can be tricky with Math.sin() etc., so we just do character by character or full clear if error)
+          if (screen.textContent === 'Error') {
+            expression = '';
+          } else {
+             // To simplify, if expression ends with something like 'Math.sin(', remove the whole thing
+             if (expression.endsWith('Math.sin(')) expression = expression.slice(0, -9);
+             else if (expression.endsWith('Math.cos(')) expression = expression.slice(0, -9);
+             else if (expression.endsWith('Math.tan(')) expression = expression.slice(0, -9);
+             else if (expression.endsWith('Math.log10(')) expression = expression.slice(0, -11);
+             else if (expression.endsWith('Math.log(')) expression = expression.slice(0, -9);
+             else if (expression.endsWith('Math.sqrt(')) expression = expression.slice(0, -10);
+             else if (expression.endsWith('Math.PI')) expression = expression.slice(0, -7);
+             else if (expression.endsWith('**')) expression = expression.slice(0, -2);
+             else expression = expression.slice(0, -1);
+          }
+          updateDisplay();
+        } else if (target.dataset.action === 'calculate') {
+          calculate();
+        }
+      } else if (target.dataset.val) {
+        handleInput(target.dataset.val);
+      }
+    });
+  });
+
+</script>
+
+<style>
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+</style>

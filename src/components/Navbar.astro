@@ -1,0 +1,310 @@
+---
+import { Icon } from 'astro-icon/components';
+import { navigationData, isCategory } from '../data/navigation';
+---
+
+<header class="fixed top-0 z-30 w-full bg-canvas border-b border-hairline h-[64px] flex items-center px-4 md:px-8">
+  <div class="flex items-center justify-between w-full max-w-[1400px] mx-auto">
+    <!-- Left side: Logo -->
+    <a href="/" class="flex items-center gap-2 flex-shrink-0">
+      <img src="/lightmode_unit.png" alt="UnitConverter" class="h-8 w-auto dark:hidden" />
+      <img src="/darkmode_unit.png" alt="UnitConverter" class="h-8 w-auto hidden dark:block" />
+    </a>
+
+    <!-- Center: Desktop horizontal menu -->
+    <nav class="hidden lg:flex items-center gap-1">
+      {navigationData.map((item) => {
+        if (isCategory(item)) {
+          const fallbackHref = item.items[0]?.href || '#';
+          const colClass = "columns-1 w-[260px]";
+
+          return (
+            <div class="menu-wrapper relative py-2">
+              <a 
+                href={fallbackHref}
+                class="menu-trigger flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium text-body hover:text-ink hover:bg-canvas-soft-2 transition-colors cursor-pointer select-none"
+              >
+                <span>{item.title}</span>
+                <Icon name="hugeicons:arrow-down-01" class="chevron-icon w-3.5 h-3.5 text-mute transition-transform duration-200" />
+              </a>
+              
+              <!-- Hover Mega Menu Panel -->
+              <div class="dropdown-panel absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-canvas border border-hairline rounded-md shadow-2xl p-1.5 transform translate-y-2 opacity-0 pointer-events-none z-50">
+                <div class={`${colClass}`}>
+                  {item.items.map((subItem) => (
+                    <a 
+                      href={subItem.href} 
+                      class="text-[13px] text-body hover:text-ink transition-all duration-150 truncate block px-3 py-2 rounded-md hover:bg-canvas-soft-2 break-inside-avoid"
+                    >
+                      {subItem.title}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <a 
+            href={item.href}
+            class="px-3 py-1.5 rounded-md text-sm font-medium text-body hover:text-ink hover:bg-canvas-soft-2 transition-colors cursor-pointer"
+          >
+            {item.title}
+          </a>
+        );
+      })}
+    </nav>
+
+    <!-- Right side: Actions -->
+    <div class="flex items-center gap-1 sm:gap-2">
+      <!-- Theme Toggle Button -->
+      <button 
+        id="theme-toggle" 
+        type="button" 
+        class="inline-flex items-center p-2 text-ink rounded-sm hover:bg-canvas-soft-2 focus:outline-none transition-colors cursor-pointer"
+        aria-label="Toggle theme"
+      >
+        <Icon name="hugeicons:sun-02" class="w-5 h-5 sm:w-6 sm:h-6 hidden dark:block" />
+        <Icon name="hugeicons:moon-02" class="w-5 h-5 sm:w-6 sm:h-6 block dark:hidden" />
+      </button>
+
+      <!-- Mobile Hamburger button (shown below lg) -->
+      <button 
+        id="mobile-menu-toggle" 
+        type="button" 
+        class="inline-flex items-center p-2 text-ink rounded-sm hover:bg-canvas-soft-2 focus:outline-none transition-colors cursor-pointer lg:hidden"
+        aria-label="Open navigation menu"
+        aria-expanded="false"
+        aria-controls="mobile-nav-menu"
+      >
+        <Icon name="hugeicons:menu-01" class="w-5 h-5 sm:w-6 sm:h-6 menu-open-icon" />
+        <Icon name="hugeicons:cancel-01" class="w-5 h-5 sm:w-6 sm:h-6 menu-close-icon hidden" />
+      </button>
+
+      <!-- Desktop sidebar toggle -->
+      <button 
+        id="sidebar-toggle" 
+        type="button" 
+        class="hidden items-center p-2 text-ink rounded-sm hover:bg-canvas-soft-2 focus:outline-none transition-colors cursor-pointer"
+        aria-label="Open sidebar"
+      >
+        <Icon name="hugeicons:menu-01" class="w-6 h-6" />
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- Mobile Navigation Menu -->
+<div 
+  id="mobile-nav-menu"
+  class="fixed top-[64px] left-0 right-0 bottom-0 z-40 bg-canvas overflow-y-auto translate-x-full transition-transform duration-300 ease-in-out lg:hidden"
+  aria-label="Mobile navigation"
+>
+  <div class="px-4 py-4 flex flex-col gap-1 max-w-lg mx-auto">
+    {navigationData.map((item) => {
+      if (isCategory(item)) {
+        return (
+          <div class="mobile-cat-wrapper">
+            <button
+              class="mobile-cat-trigger w-full flex items-center justify-between px-4 py-3 rounded-md text-sm font-medium text-ink hover:bg-canvas-soft-2 transition-colors cursor-pointer"
+              aria-expanded="false"
+            >
+              <span>{item.title}</span>
+              <Icon name="hugeicons:arrow-down-01" class="mobile-chevron w-4 h-4 text-mute transition-transform duration-200 flex-shrink-0" />
+            </button>
+            <div class="mobile-cat-panel hidden pl-4 pb-2 flex flex-col gap-0.5">
+              {item.items.map((subItem) => (
+                <a 
+                  href={subItem.href}
+                  class="block px-4 py-2 rounded-md text-[13px] text-body hover:text-ink hover:bg-canvas-soft-2 transition-colors"
+                >
+                  {subItem.title}
+                </a>
+              ))}
+            </div>
+          </div>
+        );
+      }
+      return (
+        <a
+          href={item.href}
+          class="flex items-center px-4 py-3 rounded-md text-sm font-medium text-ink hover:bg-canvas-soft-2 transition-colors"
+        >
+          {item.title}
+        </a>
+      );
+    })}
+  </div>
+</div>
+
+<!-- Mobile menu backdrop -->
+<div 
+  id="mobile-nav-backdrop"
+  class="fixed inset-0 z-30 bg-black/40 hidden opacity-0 transition-opacity duration-300 lg:hidden"
+></div>
+
+<style>
+  /* Premium dropdown animations and states */
+  .dropdown-panel {
+    transition: opacity 250ms cubic-bezier(0.16, 1, 0.3, 1), transform 250ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  
+  .dropdown-panel.is-open {
+    opacity: 1 !important;
+    transform: translate(-50%, 0px) !important;
+    pointer-events: auto !important;
+  }
+  
+  .menu-wrapper.is-active .chevron-icon {
+    transform: rotate(180deg) !important;
+  }
+  
+  .menu-wrapper.is-active .menu-trigger {
+    color: var(--ink) !important;
+    background-color: var(--canvas-soft-2) !important;
+  }
+
+
+
+  .mobile-cat-wrapper .mobile-chevron.rotated {
+    transform: rotate(180deg);
+  }
+
+  .mobile-cat-panel.is-open {
+    display: flex !important;
+    flex-direction: column;
+  }
+</style>
+
+<script>
+  // Theme toggling persistence
+  const themeToggleBtn = document.getElementById('theme-toggle');
+  
+  const handleThemeToggle = () => {
+    const isDark = document.documentElement.classList.contains('dark');
+    if (isDark) {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    } else {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    }
+  };
+
+  themeToggleBtn?.addEventListener('click', handleThemeToggle);
+
+  // Debounced/Delayed Mega-Menus hover handlers (0.5-second stay delay)
+  const menuWrappers = document.querySelectorAll('.menu-wrapper');
+  
+  menuWrappers.forEach((wrapper) => {
+    const panel = wrapper.querySelector('.dropdown-panel');
+    let timeoutId: number | undefined;
+
+    const openPanel = () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = undefined;
+      }
+      
+      menuWrappers.forEach((otherWrapper) => {
+        if (otherWrapper !== wrapper) {
+          otherWrapper.classList.remove('is-active');
+          otherWrapper.querySelector('.dropdown-panel')?.classList.remove('is-open');
+        }
+      });
+
+      wrapper.classList.add('is-active');
+      panel?.classList.add('is-open');
+    };
+
+    const closePanel = () => {
+      timeoutId = setTimeout(() => {
+        wrapper.classList.remove('is-active');
+        panel?.classList.remove('is-open');
+        timeoutId = undefined;
+      }, 500) as unknown as number;
+    };
+
+    wrapper.addEventListener('mouseenter', openPanel);
+    wrapper.addEventListener('mouseleave', closePanel);
+  });
+
+  // Mobile menu toggle
+  const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+  const mobileNavMenu = document.getElementById('mobile-nav-menu');
+  const mobileNavBackdrop = document.getElementById('mobile-nav-backdrop');
+  const menuOpenIcon = mobileMenuToggle?.querySelector('.menu-open-icon');
+  const menuCloseIcon = mobileMenuToggle?.querySelector('.menu-close-icon');
+
+  const openMobileMenu = () => {
+    mobileNavMenu?.classList.remove('translate-x-full');
+    mobileNavMenu?.classList.add('is-open');
+    mobileNavBackdrop?.classList.remove('hidden');
+    requestAnimationFrame(() => {
+      mobileNavBackdrop?.classList.remove('opacity-0');
+    });
+    mobileMenuToggle?.setAttribute('aria-expanded', 'true');
+    menuOpenIcon?.classList.add('hidden');
+    menuCloseIcon?.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  };
+
+  const closeMobileMenu = () => {
+    mobileNavMenu?.classList.add('translate-x-full');
+    mobileNavMenu?.classList.remove('is-open');
+    mobileNavBackdrop?.classList.add('opacity-0');
+    setTimeout(() => {
+      mobileNavBackdrop?.classList.add('hidden');
+    }, 300);
+    mobileMenuToggle?.setAttribute('aria-expanded', 'false');
+    menuOpenIcon?.classList.remove('hidden');
+    menuCloseIcon?.classList.add('hidden');
+    document.body.style.overflow = '';
+  };
+
+  mobileMenuToggle?.addEventListener('click', () => {
+    const isOpen = mobileNavMenu?.classList.contains('is-open');
+    if (isOpen) {
+      closeMobileMenu();
+    } else {
+      openMobileMenu();
+    }
+  });
+
+  mobileNavBackdrop?.addEventListener('click', closeMobileMenu);
+
+  // Close mobile menu when a link is clicked
+  mobileNavMenu?.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', closeMobileMenu);
+  });
+
+  // Mobile category accordion
+  const mobileCatTriggers = document.querySelectorAll('.mobile-cat-trigger');
+  mobileCatTriggers.forEach(trigger => {
+    trigger.addEventListener('click', () => {
+      const wrapper = trigger.closest('.mobile-cat-wrapper');
+      const panel = wrapper?.querySelector('.mobile-cat-panel');
+      const chevron = trigger.querySelector('.mobile-chevron');
+      const isOpen = panel?.classList.contains('is-open');
+
+      // Close all other panels
+      document.querySelectorAll('.mobile-cat-panel').forEach(p => p.classList.remove('is-open'));
+      document.querySelectorAll('.mobile-chevron').forEach(c => c.classList.remove('rotated'));
+      document.querySelectorAll('.mobile-cat-trigger').forEach(t => t.setAttribute('aria-expanded', 'false'));
+
+      if (!isOpen) {
+        panel?.classList.add('is-open');
+        chevron?.classList.add('rotated');
+        trigger.setAttribute('aria-expanded', 'true');
+      }
+    });
+  });
+
+  // Close mobile menu on resize to lg+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth >= 1024) {
+      closeMobileMenu();
+    }
+  });
+</script>

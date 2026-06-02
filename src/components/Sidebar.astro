@@ -1,0 +1,90 @@
+---
+import { navigationData, isCategory } from '../data/navigation';
+import SidebarLink from './SidebarLink.astro';
+import SidebarCategory from './SidebarCategory.astro';
+import { Icon } from 'astro-icon/components';
+---
+
+<aside 
+  id="app-sidebar"
+  class="fixed top-0 right-0 z-50 w-80 max-w-[calc(100vw-3rem)] h-screen transition-transform duration-300 ease-in-out translate-x-full bg-canvas border-l border-hairline shadow-2xl"
+  aria-label="Sidebar"
+>
+  <div class="h-full px-6 py-6 overflow-y-auto bg-canvas flex flex-col no-scrollbar">
+    <!-- Sidebar Header with Close button -->
+    <div class="flex items-center justify-end pb-4 mb-6 border-b border-hairline flex-shrink-0">
+      <button 
+        id="sidebar-close" 
+        type="button" 
+        class="inline-flex items-center p-2 text-body hover:text-ink hover:bg-canvas-soft-2 rounded-sm focus:outline-none transition-colors cursor-pointer"
+        aria-label="Close sidebar"
+      >
+        <Icon name="hugeicons:cancel-01" class="w-5 h-5" />
+      </button>
+    </div>
+
+    <!-- Navigation Items -->
+    <div class="flex flex-col gap-2 flex-grow">
+      {navigationData.map((item) => {
+        if (isCategory(item)) {
+          return <SidebarCategory category={item} />;
+        }
+        return <SidebarLink title={item.title} href={item.href} icon={item.icon} />;
+      })}
+    </div>
+  </div>
+</aside>
+
+<!-- Backdrop for overlay dimming/blurring -->
+<div 
+  id="sidebar-backdrop"
+  class="fixed inset-0 z-40 hidden bg-black/60 backdrop-blur-xs transition-opacity duration-300 opacity-0"
+></div>
+
+<script>
+  const sidebar = document.getElementById('app-sidebar');
+  const toggleBtn = document.getElementById('sidebar-toggle');
+  const closeBtn = document.getElementById('sidebar-close');
+  const backdrop = document.getElementById('sidebar-backdrop');
+
+  const openSidebar = () => {
+    if (sidebar && backdrop) {
+      backdrop.classList.remove('hidden');
+      // Request animation frame to ensure the browser paints the unhidden backdrop before transitioning
+      requestAnimationFrame(() => {
+        backdrop.classList.remove('opacity-0');
+        sidebar.classList.remove('translate-x-full');
+      });
+      document.body.classList.add('overflow-hidden');
+    }
+  };
+
+  const closeSidebar = () => {
+    if (sidebar && backdrop) {
+      sidebar.classList.add('translate-x-full');
+      backdrop.classList.add('opacity-0');
+      
+      // Wait for transitions to finish before hiding containers
+      setTimeout(() => {
+        backdrop.classList.add('hidden');
+      }, 300);
+      document.body.classList.remove('overflow-hidden');
+    }
+  };
+
+  toggleBtn?.addEventListener('click', openSidebar);
+  closeBtn?.addEventListener('click', closeSidebar);
+  backdrop?.addEventListener('click', closeSidebar);
+</script>
+
+<style>
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+</style>

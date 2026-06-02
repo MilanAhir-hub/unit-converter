@@ -1,0 +1,356 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { Icon } from 'astro-icon/components';
+import { formatSuperscript } from '../../utils/prefixLogic';
+
+const title = "Unit Prefix Converter";
+const categoryTitle = "Scientific Tools";
+const description = "Convert between all SI metric prefixes (from Quetta to Quecto) using a mathematically precise exponential calculation engine.";
+
+// Generate prefix options for the dropdowns
+const prefixOptions = [
+  { key: 'quetta', label: 'Quetta (Q)', exp: 30 },
+  { key: 'ronna', label: 'Ronna (R)', exp: 27 },
+  { key: 'yotta', label: 'Yotta (Y)', exp: 24 },
+  { key: 'zetta', label: 'Zetta (Z)', exp: 21 },
+  { key: 'exa', label: 'Exa (E)', exp: 18 },
+  { key: 'peta', label: 'Peta (P)', exp: 15 },
+  { key: 'tera', label: 'Tera (T)', exp: 12 },
+  { key: 'giga', label: 'Giga (G)', exp: 9 },
+  { key: 'mega', label: 'Mega (M)', exp: 6 },
+  { key: 'kilo', label: 'Kilo (k)', exp: 3 },
+  { key: 'hecto', label: 'Hecto (h)', exp: 2 },
+  { key: 'deca', label: 'Deca (da)', exp: 1 },
+  { key: 'base', label: 'Base Unit', exp: 0 },
+  { key: 'deci', label: 'Deci (d)', exp: -1 },
+  { key: 'centi', label: 'Centi (c)', exp: -2 },
+  { key: 'milli', label: 'Milli (m)', exp: -3 },
+  { key: 'micro', label: 'Micro (µ)', exp: -6 },
+  { key: 'nano', label: 'Nano (n)', exp: -9 },
+  { key: 'pico', label: 'Pico (p)', exp: -12 },
+  { key: 'femto', label: 'Femto (f)', exp: -15 },
+  { key: 'atto', label: 'Atto (a)', exp: -18 },
+  { key: 'zepto', label: 'Zepto (z)', exp: -21 },
+  { key: 'yocto', label: 'Yocto (y)', exp: -24 },
+  { key: 'ronto', label: 'Ronto (r)', exp: -27 },
+  { key: 'quecto', label: 'Quecto (q)', exp: -30 }
+];
+---
+
+<Layout title={`${title} — Free Online Converter`} description={description}>
+  <div class="max-w-6xl mx-auto py-6 sm:py-10 md:py-16 px-4">
+
+    <!-- ── Breadcrumbs ──────────────────────────────────────────────────────── -->
+    <nav class="flex items-center gap-1.5 sm:gap-2 mb-5 sm:mb-6 text-[10px] sm:text-[11px] font-mono text-mute uppercase tracking-widest overflow-x-auto no-scrollbar whitespace-nowrap pb-1" aria-label="Breadcrumb">
+      <a href="/" class="hover:text-ink transition-colors">Home</a>
+      <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
+      <span class="text-body">{categoryTitle}</span>
+      <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
+      <span class="text-ink font-semibold">{title}</span>
+    </nav>
+
+    <!-- ── Page Header ─────────────────────────────────────────────────────── -->
+    <header class="mb-7 sm:mb-10">
+      <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-[-0.04em] text-ink mb-3 sm:mb-4 leading-tight">{title}</h1>
+      <p class="text-body max-w-2xl leading-relaxed text-sm">{description}</p>
+    </header>
+
+    <!-- ── Converter Layout ────────────────────────────────────────────────── -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-10 mb-12 sm:mb-16">
+      
+      <!-- Main Calculator Section -->
+      <div class="lg:col-span-2 space-y-6">
+        
+        <div class="bg-canvas border border-hairline rounded-md shadow-[0_1px_1px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.04)] overflow-hidden">
+          <div class="p-6 sm:p-8 md:p-10 space-y-8">
+            
+            <div class="flex flex-col sm:flex-row items-end gap-6 sm:gap-4 relative">
+              
+              <!-- Input Value & From Prefix -->
+              <div class="w-full sm:w-[45%] space-y-4">
+                <div class="space-y-2">
+                  <label class="block text-[11px] font-semibold font-mono text-mute uppercase tracking-wider">Input Value</label>
+                  <input
+                    id="val-input"
+                    type="text"
+                    value="1"
+                    placeholder="e.g. 1.5e6"
+                    autocomplete="off"
+                    class="w-full h-12 sm:h-14 px-4 bg-canvas-soft border border-hairline rounded-sm text-lg sm:text-xl font-semibold text-ink focus:outline-none focus:border-hairline-strong transition-all placeholder:text-mute/50"
+                  />
+                </div>
+                <div class="space-y-2">
+                  <label class="block text-[11px] font-semibold font-mono text-mute uppercase tracking-wider">From Prefix</label>
+                  <div class="relative">
+                    <select id="from-prefix" class="w-full h-12 sm:h-14 px-4 bg-canvas-soft border border-hairline rounded-sm text-base sm:text-lg font-medium text-ink focus:outline-none focus:border-hairline-strong transition-all appearance-none cursor-pointer pr-10">
+                      {prefixOptions.map(opt => (
+                        <option value={opt.key} selected={opt.key === 'mega'}>
+                          {opt.label} (10{formatSuperscript(opt.exp)})
+                        </option>
+                      ))}
+                    </select>
+                    <Icon name="hugeicons:arrow-down-01" class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-mute pointer-events-none" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Swap Button -->
+              <div class="shrink-0 flex justify-center w-full sm:w-[10%] pb-1 sm:pb-3 relative z-10">
+                <button
+                  id="swap-btn"
+                  aria-label="Swap prefixes"
+                  class="w-10 h-10 rounded-full bg-canvas border border-hairline flex items-center justify-center text-ink hover:bg-primary hover:text-on-primary hover:border-primary transition-all active:scale-90 touch-manipulation shadow-sm rotate-90 sm:rotate-0"
+                >
+                  <Icon name="hugeicons:exchange-01" class="w-4 h-4" />
+                </button>
+              </div>
+
+              <!-- Target Prefix -->
+              <div class="w-full sm:w-[45%] space-y-4">
+                <div class="space-y-2">
+                  <label class="block text-[11px] font-semibold font-mono text-mute uppercase tracking-wider">To Prefix</label>
+                  <div class="relative">
+                    <select id="to-prefix" class="w-full h-12 sm:h-14 px-4 bg-canvas-soft border border-hairline rounded-sm text-base sm:text-lg font-medium text-ink focus:outline-none focus:border-hairline-strong transition-all appearance-none cursor-pointer pr-10">
+                      {prefixOptions.map(opt => (
+                        <option value={opt.key} selected={opt.key === 'kilo'}>
+                          {opt.label} (10{formatSuperscript(opt.exp)})
+                        </option>
+                      ))}
+                    </select>
+                    <Icon name="hugeicons:arrow-down-01" class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-mute pointer-events-none" />
+                  </div>
+                </div>
+                <div class="pt-6 hidden sm:block"><!-- spacer to align with input side --></div>
+              </div>
+
+            </div>
+
+            <!-- Global Error -->
+            <div id="global-err" class="text-red-500 text-sm text-center font-medium hidden">Invalid input format</div>
+
+            <hr class="border-hairline" />
+
+            <!-- Result Grid -->
+            <div class="space-y-4">
+               <h3 class="text-[11px] font-semibold font-mono text-mute uppercase tracking-wider mb-4 text-center">Precise Results</h3>
+               
+               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <!-- Converted Decimal -->
+                  <div class="bg-canvas-soft-2 border border-hairline p-5 rounded-md relative group col-span-1 sm:col-span-2">
+                     <span class="block text-[10px] font-mono text-mute uppercase tracking-widest mb-1.5">Standard Decimal</span>
+                     <div id="out-dec" class="text-xl sm:text-3xl font-bold text-ink tracking-tight break-all font-mono">—</div>
+                     <button class="copy-btn absolute top-3 right-3 text-mute hover:text-ink opacity-0 group-hover:opacity-100 transition-opacity" data-target="out-dec" aria-label="Copy">
+                        <Icon name="hugeicons:copy-01" class="w-4 h-4" />
+                     </button>
+                  </div>
+
+                  <!-- Scientific Notation -->
+                  <div class="bg-canvas-soft-2 border border-hairline p-5 rounded-md relative group">
+                     <span class="block text-[10px] font-mono text-mute uppercase tracking-widest mb-1.5">Scientific Notation</span>
+                     <div id="out-sci" class="text-lg sm:text-xl font-bold text-ink tracking-tight font-mono">—</div>
+                     <button class="copy-btn absolute top-3 right-3 text-mute hover:text-ink opacity-0 group-hover:opacity-100 transition-opacity" data-target="out-sci" aria-label="Copy">
+                        <Icon name="hugeicons:copy-01" class="w-4 h-4" />
+                     </button>
+                  </div>
+
+                  <!-- Formula Used -->
+                  <div class="bg-canvas-soft-2 border border-hairline p-5 rounded-md relative group">
+                     <span class="block text-[10px] font-mono text-mute uppercase tracking-widest mb-1.5">Exponential Formula</span>
+                     <div id="out-form" class="text-base sm:text-lg font-medium text-mute tracking-tight font-mono break-all">—</div>
+                     <button class="copy-btn absolute top-3 right-3 text-mute hover:text-ink opacity-0 group-hover:opacity-100 transition-opacity" data-target="out-form" aria-label="Copy">
+                        <Icon name="hugeicons:copy-01" class="w-4 h-4" />
+                     </button>
+                  </div>
+               </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- History Section -->
+        <div class="bg-canvas border border-hairline rounded-md p-6 sm:p-8">
+           <div class="flex items-center justify-between mb-4">
+             <h3 class="text-base font-semibold text-ink">Recent Conversions</h3>
+             <button id="clear-history" class="text-xs text-mute hover:text-red-500 transition-colors">Clear</button>
+           </div>
+           <ul id="history-list" class="space-y-2 max-h-48 overflow-y-auto pr-2">
+             <li class="text-xs text-mute italic">No history yet. Start converting!</li>
+           </ul>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <aside class="space-y-6">
+        <div class="p-6 bg-canvas border border-hairline rounded-md">
+          <h3 class="text-base font-semibold text-ink mb-5">Supported Inputs</h3>
+          <div class="space-y-3 text-sm text-body leading-relaxed">
+            <p>You can input complex numerical formats securely:</p>
+            <ul class="list-disc pl-4 space-y-1 text-ink/80">
+               <li><strong class="text-ink">Decimals:</strong> <code>0.0015</code></li>
+               <li><strong class="text-ink">Scientific:</strong> <code>1e12</code> or <code>1.5e-6</code></li>
+               <li><strong class="text-ink">Negative:</strong> <code>-5.5</code></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="p-5 bg-primary/5 border border-primary/15 rounded-md">
+          <h3 class="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Algorithm Integrity</h3>
+          <p class="text-xs text-ink/70 leading-relaxed">
+            Unlike standard calculators which use floating-point division (causing errors like <code class="font-mono text-[10px]">1e-24 / 1e30 = NaN</code>), this tool uses <strong>O(1) exponent manipulation</strong>. By calculating exactly {"$10^{(Source - Target)}$"}, we guarantee zero floating-point approximation loss.
+          </p>
+        </div>
+      </aside>
+    </div>
+  )}
+</Layout>
+
+<script>
+  import { convertPrefix, prefixes } from '../../utils/prefixLogic';
+
+  const valInput = document.getElementById('val-input') as HTMLInputElement;
+  const fromSelect = document.getElementById('from-prefix') as any;
+  const toSelect = document.getElementById('to-prefix') as any;
+  const swapBtn = document.getElementById('swap-btn');
+  const globalErr = document.getElementById('global-err');
+
+  const outDec = document.getElementById('out-dec');
+  const outSci = document.getElementById('out-sci');
+  const outForm = document.getElementById('out-form');
+
+  const historyList = document.getElementById('history-list');
+  const clearHistoryBtn = document.getElementById('clear-history');
+
+  // History system
+  let history: string[] = JSON.parse(sessionStorage.getItem('prefix-history') || '[]');
+
+  function renderHistory() {
+     if (history.length === 0) {
+        historyList!.innerHTML = '<li class="text-xs text-mute italic">No history yet. Start converting!</li>';
+        return;
+     }
+     historyList!.innerHTML = history.slice().reverse().map(h => 
+       `<li class="text-sm text-ink bg-canvas-soft px-3 py-2 rounded-sm border border-hairline shadow-sm">${h}</li>`
+     ).join('');
+  }
+
+  function addHistory(val: string, from: string, to: string, resStr: string) {
+     const str = `${val} ${from} = ${resStr} ${to}`;
+     if (history.length > 0 && history[history.length - 1] === str) return;
+     history.push(str);
+     if (history.length > 15) history.shift();
+     sessionStorage.setItem('prefix-history', JSON.stringify(history));
+     renderHistory();
+  }
+
+  clearHistoryBtn?.addEventListener('click', () => {
+     history = [];
+     sessionStorage.removeItem('prefix-history');
+     renderHistory();
+  });
+
+  function clearOutputs() {
+     outDec!.textContent = '—';
+     outSci!.textContent = '—';
+     outForm!.textContent = '—';
+  }
+
+  let lastCalcString = "";
+  let typingTimer: number;
+
+  function calculate() {
+    clearTimeout(typingTimer);
+    const val = valInput.value;
+    const from = fromSelect.value;
+    const to = toSelect.value;
+
+    if (!val.trim()) {
+       globalErr!.classList.add('hidden');
+       clearOutputs();
+       return;
+    }
+
+    const res = convertPrefix(val, from, to);
+
+    if (!res) {
+       clearOutputs();
+       globalErr!.classList.remove('hidden');
+       return;
+    }
+
+    globalErr!.classList.add('hidden');
+
+    outDec!.textContent = res.valueStr;
+    
+    // Inject nice HTML for scientific notation display
+    // Scientific str from backend looks like "1.5 × 10³"
+    // The unicode superscripts are nice, but we can also just render it as is.
+    // Wait, the logic module returns unicode superscripts like '³'.
+    outSci!.textContent = res.scientificStr;
+    outForm!.textContent = res.formulaStr;
+
+    const currentCalcString = `${val}|${from}|${to}`;
+    if (currentCalcString !== lastCalcString) {
+       typingTimer = window.setTimeout(() => {
+          const toLabel = toSelect.selectedLabel.split(' (')[0];
+          const fromLabel = fromSelect.selectedLabel.split(' (')[0];
+          addHistory(val, fromLabel, toLabel, res.scientificStr);
+          lastCalcString = currentCalcString;
+       }, 1500);
+    }
+  }
+
+  valInput.addEventListener('input', calculate);
+  fromSelect.addEventListener('change', calculate);
+  toSelect.addEventListener('change', calculate);
+
+  swapBtn?.addEventListener('click', () => {
+    const temp = fromSelect.value;
+    fromSelect.value = toSelect.value;
+    toSelect.value = temp;
+
+    // Swap input if result is valid
+    if (outDec!.textContent !== '—' && !globalErr!.classList.contains('hidden') === false) {
+       // Extract raw exponential or decimal for the input to guarantee no commas
+       // We can just use outDec value but if it has commas, it will break.
+       // The backend outputs 'en-US' locale strings with `useGrouping: false`, so no commas!
+       valInput.value = outDec!.textContent || '';
+    }
+
+    // Animate
+    swapBtn.style.transform = 'rotate(180deg)';
+    setTimeout(() => { swapBtn.style.transform = ''; }, 300);
+
+    calculate();
+  });
+
+  // Copy buttons
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const targetId = (e.currentTarget as HTMLButtonElement).getAttribute('data-target');
+      if (targetId) {
+        const el = document.getElementById(targetId);
+        const text = el?.textContent || '';
+        if (text && text !== '—') {
+          navigator.clipboard.writeText(text);
+          const icon = btn.querySelector('svg');
+          if (icon) {
+            const originalHTML = icon.outerHTML;
+            icon.outerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-500"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+            setTimeout(() => {
+              btn.innerHTML = originalHTML;
+            }, 1500);
+          }
+        }
+      }
+    });
+  });
+
+  // Init
+  renderHistory();
+  calculate(); // Do initial calc on load
+</script>
+
+<style>
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+</style>

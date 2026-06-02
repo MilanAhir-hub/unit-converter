@@ -1,0 +1,236 @@
+---
+import { Icon } from 'astro-icon/components';
+
+interface Option {
+  key: string;
+  label: string;
+  symbol?: string;
+}
+
+interface Props {
+  options: Option[];
+  selected?: string;
+  id?: string;
+  class?: string;
+}
+
+const { options = [], selected, id, class: className } = Astro.props;
+const selectedOption = (options.length > 0 ? (options.find(o => o.key === selected) || options[0]) : null);
+---
+
+<div class:list={["custom-dropdown relative select-none", className]} id={id} data-value={selectedOption?.key ?? ''}>
+  <button 
+    type="button"
+    class="dropdown-trigger w-full h-12 px-4 bg-canvas border border-hairline rounded-sm flex items-center justify-between text-sm text-ink hover:border-hairline-strong transition-all focus:outline-none"
+    aria-haspopup="listbox"
+  >
+    <span class="selected-text truncate">
+      {selectedOption ? `${selectedOption.label}${selectedOption.symbol ? ` (${selectedOption.symbol})` : ''}` : 'Select...'}
+    </span>
+    <Icon name="hugeicons:arrow-down-01" class="chevron-icon w-4 h-4 text-mute transition-transform duration-200" />
+  </button>
+
+  <div class="dropdown-menu absolute top-full left-0 right-0 mt-1 bg-canvas border border-hairline rounded-md shadow-2xl z-50 opacity-0 pointer-events-none transform translate-y-1 transition-all duration-200">
+    <div class="dropdown-items-container max-h-60 overflow-y-auto p-1 no-scrollbar">
+      {options.length > 0 && options.map((option) => (
+        <div 
+          class:list={[
+            "dropdown-item px-3 py-2 rounded-sm text-sm cursor-pointer transition-colors",
+            selectedOption && option.key === selectedOption.key ? "bg-primary/10 text-primary font-medium active-item" : "text-body hover:bg-canvas-soft-2 hover:text-ink"
+          ]}
+          data-key={option.key}
+          data-label={`${option.label}${option.symbol ? ` (${option.symbol})` : ''}`}
+          role="option"
+          aria-selected={selectedOption ? option.key === selectedOption.key : false}
+        >
+          {option.label}{option.symbol ? ` (${option.symbol})` : ''}
+        </div>
+      ))}
+    </div>
+  </div>
+</div>
+
+<style>
+  .custom-dropdown.is-open .dropdown-menu {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  .custom-dropdown.is-open .chevron-icon {
+    transform: rotate(180deg);
+  }
+
+  /* Custom scrollbar */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: var(--hairline);
+    border-radius: 10px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: var(--mute);
+  }
+</style>
+
+<script>
+  function initDropdowns() {
+    const dropdowns = document.querySelectorAll('.custom-dropdown');
+    
+    dropdowns.forEach(dropdown => {
+      // Avoid double initialization
+      if ((dropdown as any)._initialized) return;
+      (dropdown as any)._initialized = true;
+
+      const trigger = dropdown.querySelector('.dropdown-trigger');
+      const itemsContainer = dropdown.querySelector('.dropdown-items-container');
+      const selectedText = dropdown.querySelector('.selected-text');
+
+      // Add .value and .selectedLabel properties to mimic native select
+      Object.defineProperty(dropdown, 'value', {
+        get() {
+          return this.getAttribute('data-value');
+        },
+        set(val) {
+          const item = this.querySelector(`.dropdown-item[data-key="${val}"]`);
+          if (item) {
+            selectItem(item);
+          } else {
+            this.setAttribute('data-value', val);
+          }
+        },
+        configurable: true
+      });
+
+      Object.defineProperty(dropdown, 'selectedLabel', {
+        get() {
+          const activeItem = this.querySelector('.active-item');
+          return activeItem ? activeItem.getAttribute('data-label') : '';
+        },
+        configurable: true
+      });
+
+      // Method to update options dynamically
+      (dropdown as any).updateOptions = function(newOptions: {key: string, label: string, symbol?: string}[], defaultValue?: string) {
+        if (!itemsContainer) return;
+        
+        let html = '';
+        newOptions.forEach(option => {
+          const label = `${option.label}${option.symbol ? ` (${option.symbol})` : ''}`;
+          html += `
+            <div 
+              class="dropdown-item px-3 py-2 rounded-sm text-sm cursor-pointer transition-colors text-body hover:bg-canvas-soft-2 hover:text-ink"
+              data-key="${option.key}"
+              data-label="${label}"
+              role="option"
+              aria-selected="false"
+            >
+              ${label}
+            </div>
+          `;
+        });
+        
+        itemsContainer.innerHTML = html;
+        
+        // Re-attach listeners to new items
+        const newItems = itemsContainer.querySelectorAll('.dropdown-item');
+        newItems.forEach(item => {
+          item.addEventListener('click', () => selectItem(item));
+        });
+        
+        // Set default value
+        if (defaultValue) {
+          const defaultItem = itemsContainer.querySelector(`.dropdown-item[data-key="${defaultValue}"]`);
+          if (defaultItem) selectItem(defaultItem, false); // Don't dispatch event on initial populate
+        } else if (newOptions.length > 0) {
+          const firstItem = itemsContainer.querySelector('.dropdown-item');
+          if (firstItem) selectItem(firstItem, false);
+        }
+      };
+
+      function selectItem(item: Element, dispatchEvent = true) {
+        const key = item.getAttribute('data-key');
+        const label = item.getAttribute('data-label');
+        
+        if (selectedText && label) {
+          selectedText.textContent = label;
+        }
+
+        if (key) {
+          dropdown.setAttribute('data-value', key);
+        }
+
+        // Update active state
+        const items = dropdown.querySelectorAll('.dropdown-item');
+        items.forEach(i => {
+          i.classList.remove('bg-primary/10', 'text-primary', 'font-medium', 'active-item');
+          i.classList.add('text-body');
+          i.setAttribute('aria-selected', 'false');
+        });
+        item.classList.add('bg-primary/10', 'text-primary', 'font-medium', 'active-item');
+        item.classList.remove('text-body');
+        item.setAttribute('aria-selected', 'true');
+
+        dropdown.classList.remove('is-open');
+
+        if (dispatchEvent) {
+          // Dispatch both custom and standard change event
+          dropdown.dispatchEvent(new CustomEvent('change', { 
+            detail: { value: key },
+            bubbles: true 
+          }));
+          
+          // Also dispatch a plain 'change' event for compatibility with simple listeners
+          dropdown.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
+
+      // Toggle dropdown
+      trigger?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        
+        const isOpen = dropdown.classList.contains('is-open');
+        
+        // Close all other dropdowns
+        document.querySelectorAll('.custom-dropdown').forEach(d => {
+          if (d !== dropdown) d.classList.remove('is-open');
+        });
+        
+        if (!isOpen) {
+          dropdown.classList.add('is-open');
+          // Scroll active item into view
+          const activeItem = dropdown.querySelector('.active-item');
+          if (activeItem) {
+            (activeItem as HTMLElement).scrollIntoView({ block: 'nearest' });
+          }
+        } else {
+          dropdown.classList.remove('is-open');
+        }
+      });
+
+      // Handle item selection for initial items
+      const initialItems = dropdown.querySelectorAll('.dropdown-item');
+      initialItems.forEach(item => {
+        item.addEventListener('click', () => selectItem(item));
+      });
+    });
+
+    // Close on outside click
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.custom-dropdown').forEach(d => d.classList.remove('is-open'));
+    });
+  }
+
+  // Run on initial load
+  initDropdowns();
+
+  // Expose to window for dynamic use
+  (window as any).initDropdowns = initDropdowns;
+
+  // Handle Astro view transitions
+  document.addEventListener('astro:after-swap', initDropdowns);
+</script>

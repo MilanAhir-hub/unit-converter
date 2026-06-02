@@ -1,0 +1,95 @@
+---
+import { Icon } from 'astro-icon/components';
+
+const calculatorGroups = [
+  {
+    title: "Health",
+    items: [
+      { title: "BMI Calculator", href: "/calculators/bmi" },
+      { title: "BMR Calculator", href: "/calculators/bmr" },
+      { title: "Calorie Calculator", href: "/calculators/calorie" },
+    ]
+  },
+  {
+    title: "Finance",
+    items: [
+      { title: "EMI Calculator", href: "/calculators/emi" },
+      { title: "Loan Calculator", href: "/calculators/loan" },
+      { title: "Simple Interest Calculator", href: "/calculators/simple-interest" },
+      { title: "Compound Interest Calculator", href: "/calculators/compound-interest" },
+      { title: "GST Calculator", href: "/calculators/gst" },
+      { title: "Discount Calculator", href: "/calculators/discount" },
+    ]
+  },
+  {
+    title: "Education",
+    items: [
+      { title: "Percentage Calculator", href: "/calculators/percentage" },
+      { title: "GPA Calculator", href: "/calculators/gpa" },
+      { title: "Marks Percentage Calculator", href: "/calculators/marks-percentage" },
+    ]
+  },
+  {
+    title: "Time & Date",
+    items: [
+      { title: "Age Calculator", href: "/calculators/age" },
+      { title: "Date Difference Calculator", href: "/calculators/date-difference" },
+      { title: "Time Duration Calculator", href: "/calculators/time-duration" },
+    ]
+  },
+  {
+    title: "Math",
+    items: [
+      { title: "Scientific Calculator", href: "/calculators/scientific" },
+      { title: "Fraction Calculator", href: "/tools/fraction" },
+      { title: "Ratio Calculator", href: "/tools/ratio" },
+      { title: "Average Calculator", href: "/calculators/average" },
+    ]
+  }
+];
+---
+
+<section class="py-12 sm:py-14 md:py-16 w-full text-left mt-8 sm:mt-10 md:mt-12">
+  <div class="max-w-6xl mx-auto px-4 w-full">
+    <!-- Section Title & Description -->
+    <div class="mb-8 sm:mb-10 md:mb-12 text-center">
+      <h2 class="text-2xl sm:text-3xl font-semibold tracking-[-0.03em] text-ink mb-2">
+        Popular Calculators
+      </h2>
+      <p class="text-sm md:text-base text-body max-w-2xl mx-auto leading-relaxed px-2">
+        Perform common calculations quickly and accurately using our suite of free online calculators.
+      </p>
+    </div>
+
+    <!-- Calculator Groups Grid -->
+    <!-- Mobile: 2-col, SM: 3-col, LG: 5-col -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-6 sm:gap-x-8 gap-y-8 sm:gap-y-10 w-full">
+      {calculatorGroups.map((group) => (
+        <div class="flex flex-col">
+          <!-- Eyebrow Group Header (H3) -->
+          <h3 class="text-[11px] font-semibold tracking-wider font-mono text-mute uppercase pb-2 mb-3 sm:mb-4 border-b border-hairline select-none">
+            {group.title}
+          </h3>
+          
+          <!-- Calculator Items List -->
+          <ul class="flex flex-col gap-2 sm:gap-2.5">
+            {group.items.map((item) => (
+              <li>
+                <a 
+                  href={item.href}
+                  class="group flex items-center justify-between py-1 sm:py-0.5 text-[13.5px] text-body hover:text-ink transition-colors cursor-pointer touch-manipulation"
+                >
+                  <span class="truncate group-hover:underline">{item.title}</span>
+                  <Icon 
+                    name="hugeicons:arrow-right-01" 
+                    class="w-3.5 h-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-ink flex-shrink-0 ml-2" 
+                  />
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

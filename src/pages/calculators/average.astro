@@ -1,0 +1,162 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { Icon } from 'astro-icon/components';
+
+const title = "Average Calculator";
+const categoryTitle = "Math Calculators";
+const description = "Calculate the average (mean), sum, and count of a dataset.";
+
+---
+
+<Layout title={`${title} — Free Online Calculator`} description={description}>
+  <div class="max-w-6xl mx-auto py-6 sm:py-10 md:py-16 px-4">
+
+    <!-- Breadcrumbs -->
+    <nav class="flex items-center gap-1.5 sm:gap-2 mb-5 sm:mb-6 text-[10px] sm:text-[11px] font-mono text-mute uppercase tracking-widest overflow-x-auto no-scrollbar whitespace-nowrap pb-1" aria-label="Breadcrumb">
+      <a href="/" class="hover:text-ink transition-colors">Home</a>
+      <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
+      <span class="text-body">{categoryTitle}</span>
+      <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
+      <span class="text-ink font-semibold">{title}</span>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="mb-7 sm:mb-10">
+      <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-[-0.04em] text-ink mb-3 sm:mb-4 leading-tight">{title}</h1>
+      <p class="text-body max-w-2xl leading-relaxed text-sm">{description}</p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-10 mb-12 sm:mb-16">
+      
+      <!-- Calculator Main -->
+      <div class="lg:col-span-2 space-y-6">
+        
+        <div class="bg-canvas border border-hairline rounded-md shadow-[0_1px_1px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.04)] overflow-hidden">
+          <div class="p-6 sm:p-8 md:p-10 space-y-8">
+            
+            <!-- Data Input -->
+            <div class="space-y-3">
+              <label class="block text-[11px] font-semibold font-mono text-mute uppercase tracking-wider">Enter Numbers (comma, space, or newline separated)</label>
+              <textarea
+                id="data-input"
+                rows="5"
+                class="w-full p-4 bg-canvas-soft border border-hairline rounded-sm font-mono text-ink focus:outline-none focus:border-hairline-strong transition-all resize-y"
+                placeholder="e.g. 10, 20, 30, 40"
+              ></textarea>
+            </div>
+
+            <div id="error-msg" class="text-red-500 text-sm font-medium hidden text-center">Please enter valid numeric data.</div>
+
+            <hr class="border-hairline" />
+
+            <!-- Result -->
+            <div class="bg-canvas-soft-2 border border-hairline p-6 rounded-md text-center space-y-6">
+               
+               <div>
+                 <span class="block text-[10px] font-mono text-mute uppercase tracking-widest mb-2">Average (Mean)</span>
+                 <div id="res-average" class="text-4xl sm:text-5xl font-bold text-primary tracking-tight">—</div>
+               </div>
+
+               <div class="grid grid-cols-2 gap-4 pt-4 border-t border-hairline">
+                  <div>
+                    <span class="block text-[10px] font-mono text-mute uppercase tracking-widest mb-1.5">Sum</span>
+                    <div id="res-sum" class="text-xl sm:text-2xl font-bold text-ink tracking-tight">—</div>
+                  </div>
+                  <div>
+                    <span class="block text-[10px] font-mono text-mute uppercase tracking-widest mb-1.5">Count</span>
+                    <div id="res-count" class="text-xl sm:text-2xl font-bold text-mute tracking-tight">—</div>
+                  </div>
+               </div>
+
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Sidebar -->
+      <aside class="space-y-6">
+        <div class="p-6 bg-canvas border border-hairline rounded-md">
+          <h3 class="text-base font-semibold text-ink mb-4">Formula</h3>
+          <p class="text-sm text-body leading-relaxed mb-4">
+            Average = Sum of all values / Number of values
+          </p>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { calculateAverage } from '../../utils/calculators/averageLogic';
+
+  const dataInput = document.getElementById('data-input') as HTMLTextAreaElement;
+  
+  const resAverage = document.getElementById('res-average');
+  const resSum = document.getElementById('res-sum');
+  const resCount = document.getElementById('res-count');
+  const errMsg = document.getElementById('error-msg');
+
+  function calculate() {
+    const raw = dataInput.value;
+    
+    // Parse input string by splitting on commas, spaces, or newlines
+    const parts = raw.split(/[\s,]+/);
+    const numbers: number[] = [];
+    let sum = 0;
+
+    for (const p of parts) {
+      if (p.trim() === '') continue;
+      const n = parseFloat(p);
+      if (!isNaN(n)) {
+        numbers.push(n);
+        sum += n;
+      }
+    }
+
+    if (numbers.length === 0 && raw.trim() !== '') {
+      resAverage!.textContent = '—';
+      resSum!.textContent = '—';
+      resCount!.textContent = '—';
+      errMsg!.classList.remove('hidden');
+      return;
+    }
+    
+    errMsg!.classList.add('hidden');
+
+    if (numbers.length === 0) {
+      resAverage!.textContent = '—';
+      resSum!.textContent = '—';
+      resCount!.textContent = '—';
+      return;
+    }
+
+    const avg = calculateAverage(numbers);
+
+    if (avg === null) {
+      resAverage!.textContent = '—';
+      resSum!.textContent = '—';
+      resCount!.textContent = '—';
+      return;
+    }
+
+    // Format to max 4 decimal places
+    const format = (n: number) => {
+      if (Number.isInteger(n)) return n.toString();
+      return n.toLocaleString('en-US', { maximumFractionDigits: 4 });
+    };
+
+    resAverage!.textContent = format(avg);
+    resSum!.textContent = format(sum);
+    resCount!.textContent = numbers.length.toString();
+  }
+
+  dataInput.addEventListener('input', calculate);
+</script>
+
+<style>
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+</style>

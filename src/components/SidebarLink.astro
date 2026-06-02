@@ -1,0 +1,28 @@
+---
+import { Icon } from 'astro-icon/components';
+
+interface Props {
+  title: string;
+  href: string;
+  icon?: string;
+}
+
+const { title, href, icon } = Astro.props;
+
+// Basic logic to determine if active
+const currentPath = Astro.url.pathname;
+const isActive = currentPath === href || (href !== '/' && currentPath.startsWith(href));
+---
+
+<a 
+  href={href} 
+  class:list={[
+    "flex items-center gap-3 px-3 py-2 rounded-sm transition-colors text-sm font-sans w-full min-h-[40px] touch-manipulation",
+    isActive 
+      ? "bg-canvas-soft-2 text-ink font-medium border-l-[3px] border-primary" 
+      : "text-body hover:bg-canvas-soft-2 hover:text-ink border-l-[3px] border-transparent"
+  ]}
+>
+  {icon && <Icon name={icon} class="w-4 h-4 opacity-70 flex-shrink-0" />}
+  <span class="truncate">{title}</span>
+</a>
