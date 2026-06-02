@@ -89,7 +89,7 @@ const faq = [
 
 // Serialize unit definitions to JSON for client-side JS
 const unitsJson   = JSON.stringify(units);
-const categoryJson = JSON.stringify({ slug, isBinary: slug === 'binary' });
+const categoryJson = JSON.stringify({ slug, label: converterDef?.label || title, isBinary: slug === 'binary' });
 ---
 
 <Layout title={`${title} — Free Online ${categoryTitle}`} description={description}>
@@ -453,6 +453,66 @@ function formatResult(value) {
   return parseFloat(value.toFixed(8)).toString();
 }
 
+// ── History Tracking Engine ──────────────────────────────────────────────────
+let historyDebounceTimer;
+let userInteracted = false;
+
+function scheduleHistorySave(inputValue, outputValue, fromUnitName, toUnitName) {
+  if (!userInteracted) return; // Prevent saving the default conversion on page load
+  
+  clearTimeout(historyDebounceTimer);
+  
+  if (!inputValue || inputValue === '-' || outputValue === '—' || outputValue === 'Invalid') {
+    return;
+  }
+  
+  historyDebounceTimer = setTimeout(() => {
+    try {
+      const historyKey = 'realunitconverter_history';
+      const raw = localStorage.getItem(historyKey);
+      const items = raw ? JSON.parse(raw) : [];
+
+      const cleanType = (CATEGORY.label || CATEGORY.slug)
+        .replace(" Converter", "")
+        .replace(" & Mass", "")
+        .trim();
+
+      const lastItem = items[0];
+      if (
+        lastItem &&
+        lastItem.converterType === cleanType &&
+        lastItem.fromUnit === fromUnitName &&
+        lastItem.toUnit === toUnitName &&
+        lastItem.inputValue === inputValue &&
+        lastItem.outputValue === outputValue
+      ) {
+        lastItem.timestamp = Date.now();
+        localStorage.setItem(historyKey, JSON.stringify(items));
+        return;
+      }
+
+      const newItem = {
+        id: Math.random().toString(36).substring(2, 9) + Date.now().toString(36).substring(4),
+        timestamp: Date.now(),
+        converterType: cleanType,
+        fromUnit: fromUnitName,
+        toUnit: toUnitName,
+        inputValue: inputValue,
+        outputValue: outputValue
+      };
+
+      items.unshift(newItem);
+      if (items.length > 500) {
+        items.pop();
+      }
+      localStorage.setItem(historyKey, JSON.stringify(items));
+      window.dispatchEvent(new CustomEvent('history-updated'));
+    } catch (e) {
+      console.error('Error saving history record:', e);
+    }
+  }, 1000);
+}
+
 // ── Main update function ──────────────────────────────────────────────────────
 function updateConversion() {
   const rawValue  = fromInput.value.trim();
@@ -499,14 +559,20 @@ function updateConversion() {
   } else {
     formulaDisplay.textContent = 'All conversions use industry-standard SI factors.';
   }
+
+  // Auto save conversion to history
+  const fromName = fromUnit?.label || fromKey;
+  const toName = toUnit?.label || toKey;
+  scheduleHistorySave(rawValue, displayResult, fromName, toName);
 }
 
 // ── Event listeners ───────────────────────────────────────────────────────────
-fromInput.addEventListener('input',  updateConversion);
-fromDropdown.addEventListener('change', updateConversion);
-toDropdown.addEventListener('change',  updateConversion);
+fromInput.addEventListener('input',  () => { userInteracted = true; updateConversion(); });
+fromDropdown.addEventListener('change', () => { userInteracted = true; updateConversion(); });
+toDropdown.addEventListener('change',  () => { userInteracted = true; updateConversion(); });
 
 swapBtn.addEventListener('click', () => {
+  userInteracted = true;
   // Swap dropdown values
   const fromKey = getDropdownValue(fromDropdown);
   const toKey = getDropdownValue(toDropdown);
