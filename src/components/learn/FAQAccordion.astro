@@ -1,0 +1,44 @@
+---
+interface Props {
+  faqs: { q: string; a: string }[];
+}
+
+const { faqs } = Astro.props;
+---
+
+<div class="space-y-3" itemscope itemtype="https://schema.org/FAQPage">
+  {faqs.map((faq) => (
+    <details 
+      class="group border border-hairline rounded-lg bg-canvas-soft overflow-hidden transition-all duration-200 hover:border-hairline-strong"
+      itemscope 
+      itemprop="mainEntity" 
+      itemtype="https://schema.org/Question"
+    >
+      <summary 
+        class="flex items-center justify-between p-4 text-left font-semibold text-sm text-ink cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 touch-manipulation min-h-[48px] list-none [&::-webkit-details-marker]:hidden"
+      >
+        <span itemprop="name">{faq.q}</span>
+        <svg 
+          class="w-4 h-4 text-mute transition-transform duration-300 transform group-open:rotate-180 flex-shrink-0 ml-4" 
+          fill="none" 
+          viewBox="0 0 24 24" 
+          stroke="currentColor"
+          aria-hidden="true"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </summary>
+      
+      <div 
+        class="px-4 pb-4 pt-2 text-xs sm:text-sm text-body leading-relaxed border-t border-hairline/30"
+        itemscope 
+        itemprop="acceptedAnswer" 
+        itemtype="https://schema.org/Answer"
+      >
+        <div itemprop="text">
+          {faq.a}
+        </div>
+      </div>
+    </details>
+  ))}
+</div>

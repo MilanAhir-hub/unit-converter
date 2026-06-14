@@ -1,48 +1,164 @@
 ---
+import { t } from '../utils/i18n';
+
 interface Props {
   className?: string;
 }
 
 const { className } = Astro.props;
+const locale = Astro.currentLocale || 'en';
 
-const faqs = [
-  {
-    question: "What is a unit converter?",
-    answer: "A unit converter is a digital tool designed to translate a value from one measurement unit to another without changing the quantity's actual magnitude. Whether you are converting meters to feet, kilograms to pounds, or Celsius to Fahrenheit, these tools ensure accuracy across different measurement systems. They are indispensable for students, engineers, and travelers who need quick, reliable results for scientific calculations or everyday tasks. Most modern unit converters are available as simple web apps, mobile applications, or features within physical calculators."
-  },
-  {
-    question: "What happened to Google Unit Converter?",
-    answer: "The Google Unit Converter is still fully functional and built directly into Google Search. You don't need a specific app; just type your conversion request (e.g., \"5 kg to lbs\") into the search bar, and an interactive converter widget will appear instantly. Google frequently refines the interface and expands the list of supported units, ensuring it remains a fast and convenient option for basic conversions. While it may look slightly different over time, the core functionality remains one of Google's most used search features."
-  },
-  {
-    question: "How to use unit converter on TI-84 Plus?",
-    answer: "To use the unit converter on a TI-84 Plus, you usually rely on the \"SciTools\" application. Press the APPS button, find SciTools in the list, and press ENTER. Select Unit Converter from the app menu. Once there, you can navigate through categories like Area, Length, or Mass. Choose your initial unit and the target unit using the arrow keys, enter the value you want to convert, and the calculator will provide the result. If you don't see SciTools, it can be downloaded and transferred via TI Connect."
-  },
-  {
-    question: "How to use unit converter on TI-84 Plus CE?",
-    answer: "On the TI-84 Plus CE, unit conversion is streamlined through the color-enabled interface. Access the APPS menu and open the SciTools app. Select the Unit Converter option to see a vibrant list of measurement categories. Use the arrow keys to pick your source and destination units. The CE model's high-resolution screen makes reading complex conversions much easier than on older models. Simply type your number, press ENTER, and the result is displayed. The process is intuitive and significantly faster due to the CE's improved hardware."
-  },
-  {
-    question: "How to make a unit converter in Python?",
-    answer: "Building a unit converter in Python is an excellent introductory coding project. Start by creating a function that stores conversion factors in a dictionary. For example, use a \"base unit\" (like meters) and map other units to their multiplier relative to that base. The logic is simple: multiply the input value by the source unit's factor to reach the base, then divide by the target unit's factor. You can expand this with a graphical user interface using libraries like Tkinter or create a command-line interface for quick terminal-based conversions."
-  },
-  {
-    question: "How to make a unit converter in Java?",
-    answer: "Creating a unit converter in Java involves building a structured application using classes and methods. You can define a Measurement class that handles the mathematical conversion logic. For a console-based app, use Scanner for user inputs. For a GUI, Swing or JavaFX allows you to create input fields and drop-down menus. By using an enum for unit types and their corresponding conversion constants, you can keep your code organized and easy to maintain. Java's strong typing ensures your mathematical operations remain precise across various measurement types."
-  },
-  {
-    question: "How to make a unit converter in Visual Basic?",
-    answer: "Visual Basic is well-suited for creating desktop-based unit converters with a simple Windows interface. In a Windows Forms project, use ComboBox controls to let users select units and a TextBox for the input value. Use a Select Case statement in the TextChanged event to apply the correct conversion formula dynamically. Visual Basic's readable syntax makes it easy to implement basic math, such as result = input * 0.3048 for feet-to-meters conversions. This approach provides a professional-looking tool with very little complex coding required."
-  },
-  {
-    question: "How to create a unit converter in Android Studio?",
-    answer: "To build a unit converter in Android Studio, you'll use Kotlin or Java along with XML for the layout. Design a UI with EditText for the value and Spinner for unit categories. The ViewModel pattern is recommended to handle the conversion logic and maintain state during device rotations. You can implement real-time updates using TextWatcher, so the result changes as the user types. This provides a modern, responsive mobile experience typical of high-quality utility apps found on the Google Play Store."
-  },
-  {
-    question: "How to make a unit converter in Excel?",
-    answer: "Excel provides a powerful built-in function called CONVERT that handles most unit conversions automatically. The formula is =CONVERT(number, \"from_unit\", \"to_unit\"). For example, =CONVERT(10, \"in\", \"cm\") will convert 10 inches into centimeters. To create a full interactive tool, set up a spreadsheet where users can enter values and select unit codes from a drop-down list. This allows you to handle thousands of conversions simultaneously by dragging the formula down, making it the perfect choice for data-heavy engineering or scientific projects."
-  }
-];
+const getLocalizedFaqList = (loc: string) => {
+  const templates: Record<string, Array<{ question: string; answer: string }>> = {
+    'en': [
+      {
+        question: "What is a unit converter?",
+        answer: "A unit converter is a digital tool designed to translate a value from one measurement unit to another without changing the quantity's actual magnitude. Whether you are converting meters to feet, kilograms to pounds, or Celsius to Fahrenheit, these tools ensure accuracy across different measurement systems."
+      },
+      {
+        question: "What happened to Google Unit Converter?",
+        answer: "The Google Unit Converter is still fully functional and built directly into Google Search. Just type your conversion request (e.g., \"5 kg to lbs\") into the search bar, and an interactive converter widget will appear instantly."
+      },
+      {
+        question: "How to make a unit converter in Python?",
+        answer: "Building a unit converter in Python is simple. Store conversion factors in a dictionary. Convert the input value to a base unit, then divide by the target unit's factor. Libraries like Tkinter can add a GUI."
+      },
+      {
+        question: "How to make a unit converter in Excel?",
+        answer: "Excel has a built-in CONVERT function. The formula is =CONVERT(number, \"from_unit\", \"to_unit\"). For example, =CONVERT(10, \"in\", \"cm\") will convert 10 inches into centimeters."
+      }
+    ],
+    'es': [
+      {
+        question: "¿Qué es un conversor de unidades?",
+        answer: "Un conversor de unidades es una herramienta digital diseñada para traducir un valor de una unidad de medida a otra sin cambiar la magnitud real de la cantidad. Ya sea que esté convirtiendo metros a pies, kilogramos a libras o Celsius a Fahrenheit, estas herramientas garantizan la precisión en diferentes sistemas de medición."
+      },
+      {
+        question: "¿Qué pasó con el conversor de unidades de Google?",
+        answer: "El conversor de unidades de Google sigue siendo completamente funcional y está integrado directamente en la Búsqueda de Google. Simplemente escriba su solicitud de conversión (por ejemplo, \"5 kg a lbs\") en la barra de búsqueda y aparecerá un widget de conversión interactivo al instante."
+      },
+      {
+        question: "¿Cómo hacer un conversor de unidades en Python?",
+        answer: "Crear un conversor de unidades en Python es sencillo. Almacene los factores de conversión en un dicionário. Convierta el valor de entrada a una unidad base y luego divídalo por el factor de la unidad de destino."
+      },
+      {
+        question: "¿Cómo hacer un conversor de unidades en Excel?",
+        answer: "Excel tiene una función CONVERT integrada. La fórmula es =CONVERT(número, \"de_unidad\", \"a_unidad\"). Por ejemplo, =CONVERT(10, \"in\", \"cm\") convertirá 10 pulgadas en centímetros."
+      }
+    ],
+    'hi': [
+      {
+        question: "यूनिट कनवर्टर क्या है?",
+        answer: "यूनिट कनवर्टर एक डिजिटल उपकरण है जिसे किसी मात्रा के वास्तविक मान को बदले बिना एक मापन इकाई से दूसरी मापन इकाई में अनुवाद करने के लिए डिज़ाइन किया गया है। चाहे आप मीटर को फीट में, किलोग्राम को पाउंड में, या सेल्सियस को फ़ारेनहाइट में बदल रहे हों, ये उपकरण सटीकता सुनिश्चित करते हैं।"
+      },
+      {
+        question: "गूगल यूनिट कनवर्टर का क्या हुआ?",
+        answer: "गूगल यूनिट कनवर्टर अभी भी पूरी तरह से काम कर रहा है और सीधे गूगल खोज में निर्मित है। बस खोज बार में अपना रूपांतरण अनुरोध (जैसे, \"5 kg to lbs\") टाइप करें, और एक इंटरैक्टिव कनवर्टर विजेट तुरंत दिखाई देगा।"
+      },
+      {
+        question: "पायथन में यूनिट कनवर्टर कैसे बनाएं?",
+        answer: "पायथन में यूनिट कनवर्टर बनाना आसान है। एक डिक्शनरी में रूपांतरण कारकों को संग्रहीत करें। इनपुट मान को आधार इकाई में बदलें, फिर लक्ष्य इकाई के कारक से विभाजित करें।"
+      },
+      {
+        question: "एक्सेल में यूनिट कनवर्टर कैसे बनाएं?",
+        answer: "एक्सेल में एक अंतर्निहित CONVERT फ़ंक्शन है। सूत्र है =CONVERT(संख्या, \"से_इकाई\", \"तक_इकाई\")। उदाहरण के लिए, =CONVERT(10, \"in\", \"cm\") 10 इंच को सेंटीमीटर में बदल देगा।"
+      }
+    ],
+    'fr': [
+      {
+        question: "Qu'est-ce qu'un convertisseur d'unités ?",
+        answer: "Un convertisseur d'unités est un outil numérique conçu pour traduire une valeur d'une unité de mesure à une autre sans modifier la magnitude réelle de la quantité. Que vous convertissiez des mètres en pieds, des kilogrammes en livres ou des degrés Celsius en Fahrenheit, ces outils garantissent la précision."
+      },
+      {
+        question: "Qu'est-il arrivé au convertisseur d'unités de Google ?",
+        answer: "Le convertisseur d'unités de Google est toujours pleinement fonctionnel et intégré directement dans Google Search. Saisissez simplement votre demande (par exemple, \"5 kg en lbs\") dans la barre de recherche et un widget interactif apparaîtra instantanément."
+      },
+      {
+        question: "Comment faire un convertisseur d'unités en Python ?",
+        answer: "Créer un convertisseur d'unités en Python est simple. Stockez les facteurs de conversion dans un dictionnaire. Convertissez la valeur d'entrée en une unité de base, puis divisez par le facteur de l'unité cible."
+      },
+      {
+        question: "Comment faire un convertisseur d'unités dans Excel ?",
+        answer: "Excel dispose d'une fonction CONVERT intégrée. La formule est =CONVERT(nombre, \"depuis_unité\", \"vers_unité\"). Par exemple, =CONVERT(10, \"in\", \"cm\") convertira 10 pouces en centimètres."
+      }
+    ],
+    'pt': [
+      {
+        question: "O que é um conversor de unidades?",
+        answer: "Um conversor de unidades é uma ferramenta digital projetada para traduzir um valor de uma unidade de medida para outra sem alterar a magnitude real da quantidade. Esteja você convertendo metros para pés, quilogramas para libras ou Celsius para Fahrenheit, essas ferramentas garantem a precisão."
+      },
+      {
+        question: "O que aconteceu com o Conversor de Unidades do Google?",
+        answer: "O Conversor de Unidades do Google ainda está totalmente funcional e integrado diretamente na Pesquisa do Google. Basta digitar a sua solicitação (por exemplo, \"5 kg para lbs\") na barra de pesquisa e um widget aparecerá instantaneamente."
+      },
+      {
+        question: "Como fazer um conversor de unidades em Python?",
+        answer: "Criar um conversor de unidades em Python é simples. Armazene os fatores de extensão em um dicionário. Converta o valor de entrada para uma unidade base e divida pelo fator da unidade de destino."
+      },
+      {
+        question: "Como fazer um conversor de unidades no Excel?",
+        answer: "O Excel fornece uma função embutida chamada CONVERT. A fórmula é =CONVERT(número, \"de_unidade\", \"para_unidade\"). Por exemplo, =CONVERT(10, \"in\", \"cm\") converterá 10 polegadas em centímetros."
+      }
+    ],
+    'de': [
+      {
+        question: "Was ist ein Einheitenumrechner?",
+        answer: "Ein Einheitenumrechner ist ein digitales Werkzeug, mit dem ein Wert von einer Maßeinheit in eine andere umgerechnet werden kann, ohne dass sich die tatsächliche Größe ändert. Egal, ob Sie Meter in Fuß, Kilogramm in Pfund oder Celsius in Fahrenheit umrechnen, diese Tools sorgen für Präzision."
+      },
+      {
+        question: "Was ist mit dem Google Einheitenumrechner passiert?",
+        answer: "Der Google-Einheitenumrechner ist weiterhin voll funktionsfähig und direkt in die Google-Suche integriert. Geben Sie einfach Ihre Umrechnungsanfrage (z. B. „5 kg in lbs“) in die Suchleiste ein, und ein interaktives Widget wird sofort angezeigt."
+      },
+      {
+        question: "Wie erstelle ich einen Einheitenumrechner in Python?",
+        answer: "Das Erstellen eines Einheitenumrechners in Python ist einfach. Speichern Sie die Umrechnungsfaktoren in einem Dictionary. Rechnen Sie den Eingabewert in eine Basiseinheit um und teilen Sie ihn dann durch den Faktor der Zieleinheit."
+      },
+      {
+        question: "Wie erstelle ich einen Einheitenumrechner in Excel?",
+        answer: "Excel bietet eine integrierte Funktion namens CONVERT. Die Formel lautet =CONVERT(Zahl; „von_Einheit“; „zu_Einheit“). Beispielsweise wandelt =CONVERT(10; „in“; „cm“) 10 Zoll in Zentimeter um."
+      }
+    ],
+    'ar': [
+      {
+        question: "ما هو محول الوحدات؟",
+        answer: "محول الوحدات هو أداة رقمية مصممة لتحويل قيمة من وحدة قياس إلى أخرى دون تغيير القيمة الفعلية للكمية. سواء كنت تقوم بتحويل الأمتار إلى أقدام، أو الكيلوغرامات إلى أرطال، أو الدرجات المئوية إلى فهرنهايت، فإن هذه الأدوات تضمن الدقة."
+      },
+      {
+        question: "ماذا حدث لمحول وحدات Google؟",
+        answer: "لا يزال محول وحدات Google يعمل بكامل طاقته ومدمج مباشرة في بحث Google. ما عليك سوى كتابة طلب التحويل (مثل \"5 kg to lbs\") في شريط البحث، وستظهر أداة تحويل تفاعلية على الفور."
+      },
+      {
+        question: "كيف تصنع محول وحدات في بايثون؟",
+        answer: "إن إنشاء محول وحدات في بايثون أمر بسيط. قم بتخزين عوامل التحويل في قاموس. قم بتحويل القيمة المدخلة إلى وحدة أساسية، ثم اقسمها على عامل الوحدة المستهدفة."
+      },
+      {
+        question: "كيف تصنع محول وحدات في Excel؟",
+        answer: "يوفر برنامج Excel دالة مدمجة تسمى CONVERT. الصيغة هي =CONVERT(الرقم، \"من_وحدة\"، \"إلى_وحدة\"). على سبيل المثال، =CONVERT(10, \"in\", \"cm\") سيحول 10 بوصات إلى سنتيمترات."
+      }
+    ],
+    'ja': [
+      {
+        question: "単位変換器とは何ですか？",
+        answer: "単位変換器とは、ある測定単位の数値を別の測定単位に変換するためのデジタルツールです。メートルからフィート、キログラムからポンド、摂氏から華氏への変換など、測定システム間での正確な計算を可能にします。"
+      },
+      {
+        question: "Googleの単位変換器はどうなりましたか？",
+        answer: "Googleの単位変換器は現在も完全に機能しており、Google検索に直接組み込まれています。検索バーに「5 kg to lbs」などの変換リクエストを入力するだけで、インタラクティブな変換ウィジェットが即座に表示されます。"
+      },
+      {
+        question: "Pythonで単位変換器を作るには？",
+        answer: "Pythonでの単位変換器の作成は簡単です。辞書（dict）に変換係数を保存し、入力値を一度基準単位に変換してから、目的の単位の係数で割ることで実装できます。"
+      },
+      {
+        question: "Excelで単位変換器を作るには？",
+        answer: "Excelには便利な組み込み関数 CONVERT があります。数式は =CONVERT(数値, \"変換前単位\", \"変換後単位\") です。例えば, =CONVERT(10, \"in\", \"cm\") と入力すると、10インチがセンチメートルに変換されます。"
+      }
+    ]
+  };
+  return templates[loc] || templates['en'];
+};
+
+const faqs = getLocalizedFaqList(locale);
 
 const schema = {
   "@context": "https://schema.org",
@@ -61,7 +177,7 @@ const schema = {
 <section class:list={["py-12 sm:py-14 md:py-16 bg-canvas", className]} id="faq">
   <div class="max-w-6xl mx-auto px-4">
     <h2 class="text-xl sm:text-2xl font-semibold tracking-[-0.03em] text-ink mb-5 sm:mb-6 text-center">
-      Frequently Asked Questions About Unit Converters
+      {t('title_faq_about', locale)}
     </h2>
     
     <div class="space-y-2 sm:space-y-3">

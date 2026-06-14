@@ -1,0 +1,330 @@
+---
+import { getCollection, render, getEntry } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import { Icon } from 'astro-icon/components';
+import BlogFAQ from '../../components/blog/BlogFAQ.astro';
+import BlogTable from '../../components/blog/BlogTable.astro';
+import { t, translateCategory } from '../../utils/i18n';
+
+export async function getStaticPaths() {
+  const blogEntries = await getCollection('blog');
+  return blogEntries.map(entry => ({
+    params: { slug: entry.id }, props: { entry },
+  }));
+}
+
+let { entry } = Astro.props;
+const { slug } = Astro.params;
+
+if (!entry && slug) {
+  entry = await getEntry('blog', slug);
+}
+
+if (!entry) {
+  return Astro.redirect('/404');
+}
+
+const { Content } = await render(entry);
+
+const locale = Astro.currentLocale || 'en';
+
+const getLocalizedHref = (url: string) => {
+  if (locale === 'en') return url;
+  if (url.startsWith(`/${locale}`)) return url;
+  return `/${locale}${url}`;
+};
+
+const blogDetailDict: Record<string, Record<string, string>> = {
+  'guide_suffix': {
+    'en': ' — Real Unit Converter Guide',
+    'es': ' — Guía de Real Unit Converter',
+    'hi': ' — रियल यूनिट कनवर्टर गाइड',
+    'fr': ' — Guide de Real Unit Converter',
+    'pt': ' — Guia do Real Unit Converter',
+    'de': ' — Real Unit Converter Leitfaden',
+    'ar': ' — دليل محول الوحدات الحقيقي',
+    'ja': ' — リアル単位変換器ガイド'
+  },
+  'primary_formula': {
+    'en': 'Primary Formula',
+    'es': 'Fórmula Primaria',
+    'hi': 'प्राथमिक सूत्र',
+    'fr': 'Formule Principale',
+    'pt': 'Fórmula Principal',
+    'de': 'Hauptformel',
+    'ar': 'الصيغة الأساسية',
+    'ja': '主な公式'
+  },
+  'conversion_table': {
+    'en': 'Conversion Table',
+    'es': 'Tabla de Conversión',
+    'hi': 'रूपांतरण तालिका',
+    'fr': 'Table de Conversion',
+    'pt': 'Tabela de Conversão',
+    'de': 'Umrechnungstabelle',
+    'ar': 'جدول التحويل',
+    'ja': '変換表'
+  },
+  'related_tools': {
+    'en': 'Related Tools',
+    'es': 'Herramientas Relacionadas',
+    'hi': 'संबंधित उपकरण',
+    'fr': 'Outils Associés',
+    'pt': 'Ferramentas Relacionadas',
+    'de': 'Ähnliche Werkzeuge',
+    'ar': 'أدوات ذات صلة',
+    'ja': '関連ツール'
+  },
+  'share_guide': {
+    'en': 'Share This Guide',
+    'es': 'Compartir esta Guía',
+    'hi': 'इस गाइड को साझा करें',
+    'fr': 'Partager ce Guide',
+    'pt': 'Compartilhar este Guia',
+    'de': 'Diesen Leitfaden teilen',
+    'ar': 'شارك هذا الدليل',
+    'ja': 'このガイドを共有'
+  },
+  'pro_tip_desc': {
+    'en': 'Bookmark this guide for quick reference. Most conversions can be done mentally using our simplified formulas!',
+    'es': 'Guarde esta guía en sus marcadores para una referencia rápida. ¡La mayoría de las conversiones se pueden hacer mentalmente usando nuestras fórmulas simplificadas!',
+    'hi': 'त्वरित संदर्भ के लिए इस गाइड को बुकमार्क करें। हमारे सरलीकृत सूत्रों का उपयोग करके अधिकांश रूपांतरण मौखिक रूप से किए जा सकते हैं!',
+    'fr': 'Enregistrez ce guide dans vos favoris pour une référence rapide. La plupart des conversions peuvent être effectuées mentalement à l\'aide de nos formules simplifiées !',
+    'pt': 'Salve este guia nos favoritos para referência rápida. A maioria das conversões pode ser feita mentalmente usando nossas fórmulas simplificadas!',
+    'de': 'Lesezeichen für diesen Leitfaden setzen. Die meisten Umrechnungen können mit unseren vereinfachten Formeln im Kopf durchgeführt werden!',
+    'ar': 'احفظ هذا الدليل للرجوع إليه سريعًا. يمكن إجراء معظم التحويلات ذهنيًا باستخدام صيغنا المبسطة!',
+    'ja': 'このガイドをブックマークして、すばやく参照できるようにしてください。簡略化された公式を使用すれば、ほとんどの変換は頭の中で行うことができます！'
+  }
+};
+
+const getDetailString = (key: string): string => {
+  return blogDetailDict[key]?.[locale] || blogDetailDict[key]?.['en'] || key;
+};
+
+const title = `${entry.data.title}${getDetailString('guide_suffix')}`;
+const description = entry.data.description;
+
+// Format date
+const formattedDate = entry.data.pubDate.toLocaleDateString(locale === 'en' ? 'en-US' : locale, {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+
+// JSON-LD Article Schema
+const articleSchema = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": entry.data.title,
+  "description": entry.data.description,
+  "author": {
+    "@type": "Organization",
+    "name": "Real Unit Converter"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Real Unit Converter",
+    "logo": {
+      "@type": "ImageObject",
+      "url": `${Astro.url.origin}/favicon.svg`
+    }
+  },
+  "datePublished": entry.data.pubDate.toISOString(),
+  "dateModified": entry.data.updatedDate ? entry.data.updatedDate.toISOString() : entry.data.pubDate.toISOString(),
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": Astro.url.href
+  }
+};
+
+// JSON-LD Breadcrumb Schema
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": t('nav_home', locale),
+      "item": Astro.url.origin
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": t('nav_blog', locale),
+      "item": `${Astro.url.origin}/blog`
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": entry.data.title,
+      "item": Astro.url.href
+    }
+  ]
+};
+---
+
+<Layout title={title} description={description}>
+  <!-- Structured Data -->
+  <script type="application/ld+json" set:html={JSON.stringify(articleSchema)} />
+  <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
+
+  <div class="max-w-6xl mx-auto py-8 sm:py-12 md:py-16 px-4">
+    
+    <!-- Breadcrumb -->
+    <nav class="flex items-center gap-1.5 sm:gap-2 mb-8 text-[10px] sm:text-[11px] font-mono text-mute uppercase tracking-widest" aria-label="Breadcrumb">
+      <a href={getLocalizedHref("/")} class="hover:text-primary transition-colors">{t('nav_home', locale)}</a>
+      <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 text-hairline" />
+      <a href={getLocalizedHref("/blog")} class="hover:text-primary transition-colors">{t('nav_blog', locale)}</a>
+      <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 text-hairline" />
+      <span class="text-ink truncate max-w-[150px] sm:max-w-none">{entry.data.title}</span>
+    </nav>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-12">
+      
+      <!-- Main Content -->
+      <article class="lg:col-span-2 space-y-8">
+        <header class="border-b border-hairline pb-8">
+          <div class="flex items-center gap-3 text-xs font-mono text-mute uppercase tracking-wider mb-4">
+            <span class="text-primary font-bold">{entry.data.category}</span>
+            <span>•</span>
+            <span>{formattedDate}</span>
+            <span>•</span>
+            <span>{entry.data.readTime}</span>
+          </div>
+          <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold tracking-[-0.04em] text-ink leading-tight">
+            {entry.data.title}
+          </h1>
+        </header>
+
+        <!-- Direct Answer / Key Info (SEO) -->
+        {entry.data.formula && (
+          <div class="p-5 sm:p-6 bg-canvas-soft border-l-4 border-primary rounded-r-lg">
+            <h2 class="text-sm font-mono text-mute uppercase tracking-widest mb-2">{getDetailString('primary_formula')}</h2>
+            <p class="text-lg sm:text-xl font-bold text-ink">
+              {entry.data.formula}
+            </p>
+          </div>
+        )}
+
+        <!-- Main Article Body -->
+        <div class="prose prose-neutral dark:prose-invert max-w-none
+          prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-ink
+          prose-p:text-body prose-p:leading-relaxed prose-p:text-sm sm:prose-p:text-base
+          prose-li:text-body prose-li:text-sm sm:prose-li:text-base
+          prose-strong:text-ink prose-strong:font-bold
+          prose-img:rounded-xl prose-img:border prose-img:border-hairline
+          prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
+          <Content />
+        </div>
+
+        <!-- Table -->
+        {entry.data.table && (
+          <div class="mt-10">
+            <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-ink mb-4">{getDetailString('conversion_table')}</h2>
+            <BlogTable headers={entry.data.table.headers} rows={entry.data.table.rows} />
+          </div>
+        )}
+
+        <!-- FAQ Section -->
+        {entry.data.faqs && <BlogFAQ faqs={entry.data.faqs} />}
+      </article>
+
+      <!-- Sidebar -->
+      <aside class="space-y-10">
+        
+        <!-- Related Converters -->
+        {entry.data.relatedConverters && (
+          <div class="bg-canvas border border-hairline rounded-xl p-6 shadow-sm">
+            <h3 class="text-sm font-mono text-mute uppercase tracking-widest mb-6 flex items-center gap-2">
+              <Icon name="hugeicons:calculator" class="w-4 h-4 text-primary" />
+              {getDetailString('related_tools')}
+            </h3>
+            <div class="space-y-4">
+              {entry.data.relatedConverters.map((slug) => {
+                // Determine the correct path prefix
+                let pathPrefix = '/unit-converters/';
+                const calculators = ['percentage', 'bmi', 'bmr', 'calorie', 'age', 'gpa', 'discount', 'loan', 'emi', 'scientific', 'interest', 'simple-interest', 'compound-interest', 'gst', 'marks-percentage', 'date-difference', 'time-duration', 'average'];
+                const tools = ['scientific-notation', 'number-base', 'fraction', 'ratio', 'unit-prefix', 'number-system'];
+                
+                if (calculators.includes(slug)) pathPrefix = '/calculators/';
+                if (tools.includes(slug)) pathPrefix = '/tools/';
+                if (slug === 'weight') slug = 'weight-mass'; // Match navigation.ts
+
+                const displayName = pathPrefix === '/unit-converters/' ? translateCategory(slug, locale) : slug.replace(/-/g, ' ');
+
+                return (
+                  <a 
+                    href={getLocalizedHref(`${pathPrefix}${slug}`)}
+                    class="flex items-center justify-between p-3 rounded-lg border border-hairline hover:border-primary/30 hover:bg-canvas-soft transition-all group"
+                  >
+                    <span class="text-sm font-medium text-ink group-hover:text-primary capitalize">
+                      {displayName}
+                    </span>
+                    <Icon name="hugeicons:arrow-right-01" class="w-4 h-4 text-mute group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <!-- Share Article -->
+        <div class="bg-canvas border border-hairline rounded-xl p-6 shadow-sm">
+          <h3 class="text-sm font-mono text-mute uppercase tracking-widest mb-6 flex items-center gap-2">
+            <Icon name="hugeicons:share-01" class="w-4 h-4 text-primary" />
+            {getDetailString('share_guide')}
+          </h3>
+          <div class="grid grid-cols-3 gap-3">
+            <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(entry.data.title)}&url=${encodeURIComponent(Astro.url.href)}`} target="_blank" class="flex flex-col items-center gap-2 p-3 rounded-lg border border-hairline hover:bg-canvas-soft transition-colors group">
+              <Icon name="hugeicons:new-twitter" class="w-5 h-5 text-ink" />
+              <span class="text-[10px] font-medium text-mute uppercase">Twitter</span>
+            </a>
+            <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(Astro.url.href)}`} target="_blank" class="flex flex-col items-center gap-2 p-3 rounded-lg border border-hairline hover:bg-canvas-soft transition-colors group">
+              <Icon name="hugeicons:facebook-01" class="w-5 h-5 text-[#1877F2]" />
+              <span class="text-[10px] font-medium text-mute uppercase">FB</span>
+            </a>
+            <a href={`https://api.whatsapp.com/send?text=${encodeURIComponent(entry.data.title + ' ' + Astro.url.href)}`} target="_blank" class="flex flex-col items-center gap-2 p-3 rounded-lg border border-hairline hover:bg-canvas-soft transition-colors group">
+              <Icon name="hugeicons:whatsapp" class="w-5 h-5 text-[#25D366]" />
+              <span class="text-[10px] font-medium text-mute uppercase">WA</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Featured Snippet Tip -->
+        <div class="bg-primary/5 border border-primary/20 rounded-xl p-6">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <Icon name="hugeicons:information-circle" class="w-4 h-4 text-primary" />
+            </div>
+            <h4 class="text-sm font-bold text-ink">{t('pro_tip', locale)}</h4>
+          </div>
+          <p class="text-xs sm:text-sm text-body leading-relaxed">
+            {getDetailString('pro_tip_desc')}
+          </p>
+        </div>
+
+      </aside>
+    </div>
+  </div>
+</Layout>
+
+<style is:global>
+  /* Custom prose overrides for the blog */
+  .prose h2 {
+    margin-top: 2.5rem;
+    margin-bottom: 1.25rem;
+    font-size: 1.5rem;
+    line-height: 1.2;
+  }
+  .prose h3 {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+    line-height: 1.2;
+  }
+  @media (min-width: 640px) {
+    .prose h2 { font-size: 1.875rem; }
+    .prose h3 { font-size: 1.5rem; }
+  }
+</style>

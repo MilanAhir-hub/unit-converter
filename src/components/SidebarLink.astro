@@ -1,5 +1,6 @@
 ---
 import { Icon } from 'astro-icon/components';
+import { t, translateCategory, translatePopularRoute } from '../utils/i18n';
 
 interface Props {
   title: string;
@@ -9,13 +10,53 @@ interface Props {
 
 const { title, href, icon } = Astro.props;
 
+const locale = Astro.currentLocale || 'en';
+
+const keyMap: Record<string, string> = {
+  "Home": "nav_home",
+  "Unit Converters": "nav_converters",
+  "Popular Conversions": "nav_popular",
+  "Calculators": "nav_calculators",
+  "Scientific Tools": "nav_tools",
+  "Blog & Guides": "nav_blog",
+  "About": "nav_about",
+  "Contact": "nav_contact",
+  "History": "nav_history",
+  "Favorites": "nav_favorites"
+};
+
+// Localize title
+let localizedTitle = title;
+const key = keyMap[title];
+if (key) {
+  localizedTitle = t(key, locale);
+} else if (href.startsWith('/unit-converters/')) {
+  const slug = href.substring('/unit-converters/'.length);
+  localizedTitle = translateCategory(slug, locale);
+} else if (href.startsWith('/calculators/')) {
+  const slug = href.substring('/calculators/'.length);
+  localizedTitle = translateCategory(slug, locale);
+} else if (href.startsWith('/tools/')) {
+  const slug = href.substring('/tools/'.length);
+  localizedTitle = translateCategory(slug, locale);
+} else if (href.startsWith('/popular/')) {
+  const slug = href.substring('/popular/'.length);
+  localizedTitle = translatePopularRoute(slug, locale, title);
+}
+
+// Localize href
+let localizedHref = href;
+if (locale !== 'en' && href.startsWith('/') && !href.startsWith(`/${locale}/`) && href !== `/${locale}`) {
+  localizedHref = `/${locale}${href}`;
+}
+
 // Basic logic to determine if active
 const currentPath = Astro.url.pathname;
-const isActive = currentPath === href || (href !== '/' && currentPath.startsWith(href));
+const isActive = currentPath === localizedHref || (localizedHref !== '/' && localizedHref !== `/${locale}` && currentPath.startsWith(localizedHref));
 ---
 
 <a 
-  href={href} 
+  href={localizedHref} 
   class:list={[
     "flex items-center gap-3 px-3 py-2 rounded-sm transition-colors text-sm font-sans w-full min-h-[40px] touch-manipulation",
     isActive 
@@ -24,5 +65,5 @@ const isActive = currentPath === href || (href !== '/' && currentPath.startsWith
   ]}
 >
   {icon && <Icon name={icon} class="w-4 h-4 opacity-70 flex-shrink-0" />}
-  <span class="truncate">{title}</span>
+  <span class="truncate">{localizedTitle}</span>
 </a>

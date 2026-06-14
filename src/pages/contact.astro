@@ -3,24 +3,59 @@ import Layout from '../layouts/Layout.astro';
 import { Icon } from 'astro-icon/components';
 import Dropdown from '../components/Dropdown.astro';
 
+const bugReportMailto = `mailto:support@realunitconverter.com?subject=${encodeURIComponent("Bug Report - Real Unit Converter")}&body=${encodeURIComponent(`Hello,
+
+I found a bug on Real Unit Converter.
+
+Page URL:
+[Please describe where the issue occurred]
+
+Bug Description:
+[Describe the issue]
+
+Expected Behavior:
+[What should happen?]
+
+Actual Behavior:
+[What happened instead?]
+
+Device:
+[Desktop / Mobile]
+
+Browser:
+[Chrome / Safari / Firefox / Edge]
+
+Steps to Reproduce:
+1.
+2.
+3.
+
+Thank you.`)}`;
+
 const contactOptions = [
   {
     title: "General Inquiries",
     description: "Questions about our tools or how to use them? We're here to help.",
-    email: "support@unitconverter.com",
-    icon: "hugeicons:information-circle"
+    email: "unitdevsupport@gmail.com",
+    icon: "hugeicons:information-circle",
+    href: "https://mail.google.com/mail/?view=cm&fs=1&to=unitdevsupport@gmail.com",
+    linkText: "unitdevsupport@gmail.com"
   },
   {
     title: "Business & Partnerships",
     description: "Interested in integrating our API or partnering with us?",
-    email: "business@unitconverter.com",
-    icon: "hugeicons:briefcase-02"
+    email: "unitdevsupport@gmail.com",
+    icon: "hugeicons:briefcase-02",
+    href: "https://mail.google.com/mail/?view=cm&fs=1&to=unitdevsupport@gmail.com",
+    linkText: "unitdevsupport@gmail.com"
   },
   {
     title: "Report a Bug",
     description: "Found an error or a missing unit? Help us improve our engine.",
-    email: "dev@unitconverter.com",
-    icon: "hugeicons:bug-01"
+    email: "unitdevsupport@gmail.com",
+    icon: "hugeicons:bug-01",
+    href: "https://mail.google.com/mail/?view=cm&fs=1&to=unitdevsupport@gmail.com",
+    linkText: "unitdevsupport@gmail.com"
   }
 ];
 ---
@@ -51,8 +86,14 @@ const contactOptions = [
           <div class="flex flex-col flex-grow">
             <h3 class="text-lg font-semibold text-ink mb-2">{option.title}</h3>
             <p class="text-sm text-body mb-6 leading-relaxed flex-grow">{option.description}</p>
-            <a href={`mailto:${option.email}`} class="text-sm font-medium text-primary hover:underline inline-flex items-center gap-1.5 mt-auto self-start">
-              {option.email}
+            <a 
+              href={option.href} 
+              target={option.href.startsWith('http') ? "_blank" : undefined}
+              rel={option.href.startsWith('http') ? "noopener noreferrer" : undefined}
+              aria-label={option.title === "Report a Bug" ? "Report a bug via email with pre-filled template" : option.title === "General Inquiries" ? "Send support email via Gmail" : undefined}
+              class="text-sm font-medium text-primary hover:underline inline-flex items-center gap-1.5 mt-auto self-start"
+            >
+              {option.linkText}
               <Icon name="hugeicons:arrow-right-01" class="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
             </a>
           </div>

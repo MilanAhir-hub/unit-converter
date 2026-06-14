@@ -2,17 +2,29 @@
 import SidebarLink from './SidebarLink.astro';
 import type { NavCategory } from '../data/navigation';
 import { Icon } from 'astro-icon/components';
+import { t } from '../utils/i18n';
 
 interface Props {
   category: NavCategory;
 }
 
 const { category } = Astro.props;
+const locale = Astro.currentLocale || 'en';
+
+const keyMap: Record<string, string> = {
+  "Unit Converters": "nav_converters",
+  "Popular Conversions": "nav_popular",
+  "Calculators": "nav_calculators",
+  "Scientific Tools": "nav_tools"
+};
+
+const key = keyMap[category.title];
+const localizedTitle = key ? t(key, locale) : category.title;
 ---
 
 <details class="group mb-4">
   <summary class="flex items-center justify-between cursor-pointer list-none py-1 mb-1 outline-none">
-    <span class="text-[11px] uppercase tracking-wider font-mono text-mute select-none">{category.title}</span>
+    <span class="text-[11px] uppercase tracking-wider font-mono text-mute select-none">{localizedTitle}</span>
     <Icon 
       name="hugeicons:arrow-down-01" 
       class="w-4 h-4 text-hairline-strong transition-transform group-open:rotate-180" 

@@ -1,5 +1,22 @@
 ---
 import { Icon } from 'astro-icon/components';
+import { t, translateCategory } from '../utils/i18n';
+
+const locale = Astro.currentLocale || 'en';
+
+const getLocalizedHref = (url: string) => {
+  if (locale === 'en') return url;
+  if (url.startsWith(`/${locale}`)) return url;
+  return `/${locale}${url}`;
+};
+
+const groupKeyMap: Record<string, string> = {
+  'Health': 'group_health',
+  'Finance': 'group_finance',
+  'Education': 'group_education',
+  'Time & Date': 'group_time_date',
+  'Math': 'group_math',
+};
 
 const calculatorGroups = [
   {
@@ -47,6 +64,17 @@ const calculatorGroups = [
     ]
   }
 ];
+
+const localizedGroups = calculatorGroups.map(group => ({
+  title: t(groupKeyMap[group.title] || group.title, locale),
+  items: group.items.map(item => {
+    const slug = item.href.split('/').pop() || '';
+    return {
+      title: translateCategory(slug, locale) || item.title,
+      href: getLocalizedHref(item.href)
+    };
+  })
+}));
 ---
 
 <section class="py-12 sm:py-14 md:py-16 w-full text-left mt-8 sm:mt-10 md:mt-12">
@@ -54,17 +82,16 @@ const calculatorGroups = [
     <!-- Section Title & Description -->
     <div class="mb-8 sm:mb-10 md:mb-12 text-center">
       <h2 class="text-2xl sm:text-3xl font-semibold tracking-[-0.03em] text-ink mb-2">
-        Popular Calculators
+        {t('section_popular_calculators', locale)}
       </h2>
       <p class="text-sm md:text-base text-body max-w-2xl mx-auto leading-relaxed px-2">
-        Perform common calculations quickly and accurately using our suite of free online calculators.
+        {t('section_popular_calculators_desc', locale)}
       </p>
     </div>
 
     <!-- Calculator Groups Grid -->
-    <!-- Mobile: 2-col, SM: 3-col, LG: 5-col -->
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-6 sm:gap-x-8 gap-y-8 sm:gap-y-10 w-full">
-      {calculatorGroups.map((group) => (
+      {localizedGroups.map((group) => (
         <div class="flex flex-col">
           <!-- Eyebrow Group Header (H3) -->
           <h3 class="text-[11px] font-semibold tracking-wider font-mono text-mute uppercase pb-2 mb-3 sm:mb-4 border-b border-hairline select-none">

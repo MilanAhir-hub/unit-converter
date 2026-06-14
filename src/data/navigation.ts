@@ -124,6 +124,11 @@ export const navigationData: (NavCategory | NavItem)[] = [
     title: "History",
     href: "/history",
     icon: "hugeicons:clock-01"
+  },
+  {
+    title: "Favorites",
+    href: "/favorites",
+    icon: "hugeicons:star"
   }
 ];
 

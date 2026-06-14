@@ -1,7 +1,17 @@
 ---
 import { Icon } from 'astro-icon/components';
+import { t, translateCategory, translatePopularRoute } from '../utils/i18n';
 
 const currentYear = new Date().getFullYear();
+const locale = Astro.currentLocale || 'en';
+
+const getLocalizedHref = (url: string) => {
+  if (locale === 'en') return url;
+  if (url.startsWith('mailto:')) return url;
+  if (url.startsWith('#')) return url;
+  if (url.startsWith(`/${locale}`)) return url;
+  return `/${locale}${url}`;
+};
 
 const popularConverters = [
   { title: "Length Converter", href: "/unit-converters/length" },
@@ -35,49 +45,164 @@ const calculators = [
   { title: "Scientific Calculator", href: "/calculators/scientific" },
 ];
 
-const resources = [
-  { title: "Blog", href: "/blog" },
-  { title: "Guides", href: "/blog" },
-  { title: "FAQ", href: "/#faq" },
-  { title: "About Us", href: "/about" },
-  { title: "Contact Us", href: "/contact" },
+const bugReportMailto = `mailto:support@realunitconverter.com?subject=${encodeURIComponent("Bug Report - Real Unit Converter")}&body=${encodeURIComponent(`Hello,
+
+I found a bug on Real Unit Converter.
+
+Page URL:
+[Please describe where the issue occurred]
+
+Bug Description:
+[Describe the issue]
+
+Expected Behavior:
+[What should happen?]
+
+Actual Behavior:
+[What happened instead?]
+
+Device:
+[Desktop / Mobile]
+
+Browser:
+[Chrome / Safari / Firefox / Edge]
+
+Steps to Reproduce:
+1.
+2.
+3.
+
+Thank you.`)}`;
+
+const footerDict: Record<string, Record<string, string>> = {
+  'popular_converters': {
+    'en': 'Popular Converters', 'es': 'Conversores Populares', 'hi': 'लोकप्रिय कनवर्टर', 'fr': 'Convertisseurs Populaires', 'pt': 'Conversores Populares', 'de': 'Beliebte Umrechner', 'ar': 'محولات شائعة', 'ja': '人気の変換器'
+  },
+  'popular_conversions': {
+    'en': 'Popular Conversions', 'es': 'Conversiones Populares', 'hi': 'लोकप्रिय रूपांतरण', 'fr': 'Conversions Populaires', 'pt': 'Conversões Populares', 'de': 'Beliebte Umrechnungen', 'ar': 'تحويلات شائعة', 'ja': '人気の変換'
+  },
+  'calculators': {
+    'en': 'Calculators', 'es': 'Calculadoras', 'hi': 'कैलकुलेटर', 'fr': 'Calculatrices', 'pt': 'Calculadoras', 'de': 'Rechner', 'ar': 'الحاسبات', 'ja': '電卓'
+  },
+  'resources': {
+    'en': 'Resources', 'es': 'Recursos', 'hi': 'संसाधन', 'fr': 'Ressources', 'pt': 'Recursos', 'de': 'Ressourcen', 'ar': 'الموارد', 'ja': 'リソース'
+  },
+  'legal': {
+    'en': 'Legal', 'es': 'Legal', 'hi': 'कानूनी', 'fr': 'Légal', 'pt': 'Legal', 'de': 'Rechtliches', 'ar': 'قانوني', 'ja': '法的情報'
+  },
+  'desc': {
+    'en': "Free online unit converter with hundreds of conversion tools, calculators, and conversion pages for everyday, academic, engineering, and professional use.",
+    'es': "Conversor de unidades gratuito en línea con cientos de herramientas de conversión, calculadoras y páginas de conversión para uso diario, académico, de ingeniería y profesional.",
+    'hi': "मुफ़्त ऑनलाइन यूनिट कनवर्टर जिसमें दैनिक, शैक्षणिक, इंजीनियरिंग और व्यावसायिक उपयोग के लिए सैकड़ों रूपांतरण उपकरण, कैलकुलेटर और रूपांतरण पृष्ठ हैं।",
+    'fr': "Convertisseur d'unités en ligne gratuit avec des centaines d'outils de conversion, de calculatrices et de pages de conversion pour un usage quotidien, académique, d'ingénierie et professionnel.",
+    'pt': "Conversor de unidades online gratuito com centenas de ferramentas de conversão, calculadoras e páginas de conversão para uso diário, académico, de engenharia e profissional.",
+    'de': "Kostenloser Online-Einheitenrechner mit Hunderten von Umrechnungstools, Rechnern und Umrechnungsseiten für den täglichen, akademischen, technischen und professionellen Gebrauch.",
+    'ar': "محول وحدات مجاني عبر الإنترنت يحتوي على مئات من أدوات التحويل والحاسبات لجميع الاستخدامات اليومية والأكاديمية والهندسية والمهنية.",
+    'ja': "日常生活、学術、エンジニアリング、専門用途向けの数百の変換ツール、電卓、変換ページを備えた無料のオンライン単位変換器。"
+  },
+  'blog': {
+    'en': 'Blog', 'es': 'Blog', 'hi': 'ब्लॉग', 'fr': 'Blog', 'pt': 'Blog', 'de': 'Blog', 'ar': 'المدونة', 'ja': 'ブログ'
+  },
+  'guides': {
+    'en': 'Guides', 'es': 'Guías', 'hi': 'गाइड', 'fr': 'Guides', 'pt': 'Guias', 'de': 'Leitfäden', 'ar': 'الدلائل', 'ja': 'ガイド'
+  },
+  'faq': {
+    'en': 'FAQ', 'es': 'FAQ', 'hi': 'FAQ', 'fr': 'FAQ', 'pt': 'FAQ', 'de': 'FAQ', 'ar': 'الأسئلة الشائعة', 'ja': 'FAQ'
+  },
+  'about_us': {
+    'en': 'About Us', 'es': 'Sobre Nosotros', 'hi': 'हमारे बारे में', 'fr': 'À Propos', 'pt': 'Sobre Nós', 'de': 'Über Uns', 'ar': 'حولنا', 'ja': '私たちについて'
+  },
+  'contact_us': {
+    'en': 'Contact Us', 'es': 'Contacto', 'hi': 'संपर्क करें', 'fr': 'Contactez-nous', 'pt': 'Contate-nos', 'de': 'Kontaktieren Sie Uns', 'ar': 'اتصل بنا', 'ja': 'お問い合わせ'
+  },
+  'report_bug': {
+    'en': '🐞 Report a Bug', 'es': '🐞 Reportar un Error', 'hi': '🐞 बग रिपोर्ट करें', 'fr': '🐞 Signaler un Bug', 'pt': '🐞 Relatar um Erro', 'de': '🐞 Fehler Melden', 'ar': '🐞 الإبلاغ عن خطأ', 'ja': '🐞 バグ報告'
+  },
+  'privacy_policy': {
+    'en': 'Privacy Policy', 'es': 'Política de Privacidad', 'hi': 'गोपनीयता नीति', 'fr': 'Politique de Confidentialité', 'pt': 'Política de Privacidade', 'de': 'Datenschutzerklärung', 'ar': 'سياسة الخصوصية', 'ja': 'プライバシーポリシー'
+  },
+  'terms_conditions': {
+    'en': 'Terms and Conditions', 'es': 'Términos y Condiciones', 'hi': 'नियम और शर्तें', 'fr': 'Conditions Générales', 'pt': 'Termos e Condições', 'de': 'Allgemeine Geschäftsbedingungen', 'ar': 'الشروط والأحكام', 'ja': '利用規約'
+  },
+  'disclaimer': {
+    'en': 'Disclaimer', 'es': 'Descargo de Responsabilidad', 'hi': 'अस्वीकरण', 'fr': 'Avis de Non-responsabilité', 'pt': 'Isenção de Responsabilidade', 'de': 'Haftungsausschluss', 'ar': 'إخلاء المسؤولية', 'ja': '免責事項'
+  },
+  'cookie_policy': {
+    'en': 'Cookie Policy', 'es': 'Política de Cookies', 'hi': 'कुकी नीति', 'fr': 'Politique relative aux cookies', 'pt': 'Política de Cookies', 'de': 'Cookie-Richtlinie', 'ar': 'سياسة ملفات الارتباط', 'ja': 'クッキーポリシー'
+  },
+  'sitemap': {
+    'en': 'Sitemap', 'es': 'Mapa del Sitio', 'hi': 'साइटमैप', 'fr': 'Plan du Site', 'pt': 'Sitemap', 'de': 'Sitemap', 'ar': 'خريطة الموقع', 'ja': 'サイトマップ'
+  }
+};
+
+const getFooterString = (key: string, loc: string): string => {
+  return footerDict[key]?.[loc] || footerDict[key]?.['en'] || key;
+};
+
+const localizedPopularConverters = popularConverters.map(item => {
+  const slug = item.href.substring('/unit-converters/'.length);
+  return {
+    title: translateCategory(slug, locale),
+    href: getLocalizedHref(item.href)
+  };
+});
+
+const localizedPopularConversions = popularConversions.map(item => {
+  const slug = item.href.substring('/popular/'.length);
+  return {
+    title: translatePopularRoute(slug, locale, item.title),
+    href: getLocalizedHref(item.href)
+  };
+});
+
+const localizedCalculators = calculators.map(item => ({
+  title: item.title,
+  href: getLocalizedHref(item.href)
+}));
+
+const localizedResources = [
+  { title: getFooterString("blog", locale), href: getLocalizedHref("/blog") },
+  { title: getFooterString("guides", locale), href: getLocalizedHref("/blog") },
+  { title: getFooterString("faq", locale), href: getLocalizedHref("/#faq") },
+  { title: getFooterString("about_us", locale), href: getLocalizedHref("/about") },
+  { title: getFooterString("contact_us", locale), href: getLocalizedHref("/contact") },
+  { title: getFooterString("report_bug", locale), href: bugReportMailto },
 ];
 
-const legal = [
-  { title: "Privacy Policy", href: "/privacy" },
-  { title: "Terms and Conditions", href: "/terms" },
-  { title: "Disclaimer", href: "/disclaimer" },
-  { title: "Cookie Policy", href: "/cookies" },
-  { title: "Sitemap", href: "/sitemap" },
+const localizedLegal = [
+  { title: getFooterString("privacy_policy", locale), href: getLocalizedHref("/privacy") },
+  { title: getFooterString("terms_conditions", locale), href: getLocalizedHref("/terms") },
+  { title: getFooterString("disclaimer", locale), href: getLocalizedHref("/disclaimer") },
+  { title: getFooterString("cookie_policy", locale), href: getLocalizedHref("/cookies") },
+  { title: getFooterString("sitemap", locale), href: "/sitemap-index.xml" },
 ];
 ---
 
 <footer class="w-full bg-canvas border-t border-hairline py-10 sm:py-12 md:py-16 mt-auto">
   <div class="max-w-[1400px] mx-auto px-4 md:px-8 w-full">
     <!-- Top Footer: Brand & Multi-column Grid -->
-    <!-- Mobile: 2-col; SM: 2-col; MD: 3-col; LG: 6-col -->
     <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 sm:gap-8 pb-10 sm:pb-12 border-b border-hairline w-full text-left">
       
-      <!-- Column 1: Brand (full width on mobile, spans 2 cols on sm) -->
+      <!-- Column 1: Brand -->
       <div class="flex flex-col gap-3 sm:gap-4 col-span-2 sm:col-span-2 md:col-span-3 lg:col-span-1">
-        <a href="/" class="flex items-center gap-2 select-none">
+        <a href={getLocalizedHref("/")} class="flex items-center gap-2 select-none">
           <img src="/lightmode_unit.png" alt="UnitConverter" class="h-7 sm:h-8 w-auto dark:hidden" />
           <img src="/darkmode_unit.png" alt="UnitConverter" class="h-7 sm:h-8 w-auto hidden dark:block" />
         </a>
         <p class="text-[13px] text-body leading-relaxed max-w-xs sm:max-w-sm">
-          Free online unit converter with hundreds of conversion tools, calculators, and conversion pages for everyday, academic, engineering, and professional use.
+          {getFooterString("desc", locale)}
         </p>
       </div>
 
       <!-- Column 2: Popular Converters -->
       <div class="flex flex-col gap-3 sm:gap-4">
         <h4 class="text-[11px] font-semibold tracking-wider font-mono text-mute uppercase select-none">
-          Popular Converters
+          {getFooterString("popular_converters", locale)}
         </h4>
         <ul class="flex flex-col gap-2">
-          {popularConverters.map((item) => (
+          {localizedPopularConverters.map((item) => (
             <li>
-              <a href={item.href} class="text-[13px] text-body hover:text-ink hover:underline transition-colors block py-0.5 truncate max-w-full touch-manipulation">
+              <a href={item.href} class="text-[13px] text-body hover:text-ink hover:underline transition-colors block py-3 sm:py-0.5 truncate max-w-full touch-manipulation">
                 {item.title}
               </a>
             </li>
@@ -88,12 +213,12 @@ const legal = [
       <!-- Column 3: Popular Conversions -->
       <div class="flex flex-col gap-3 sm:gap-4">
         <h4 class="text-[11px] font-semibold tracking-wider font-mono text-mute uppercase select-none">
-          Popular Conversions
+          {getFooterString("popular_conversions", locale)}
         </h4>
         <ul class="flex flex-col gap-2">
-          {popularConversions.map((item) => (
+          {localizedPopularConversions.map((item) => (
             <li>
-              <a href={item.href} class="text-[13px] text-body hover:text-ink hover:underline transition-colors block py-0.5 truncate max-w-full touch-manipulation">
+              <a href={item.href} class="text-[13px] text-body hover:text-ink hover:underline transition-colors block py-3 sm:py-0.5 truncate max-w-full touch-manipulation">
                 {item.title}
               </a>
             </li>
@@ -104,12 +229,12 @@ const legal = [
       <!-- Column 4: Calculators -->
       <div class="flex flex-col gap-3 sm:gap-4">
         <h4 class="text-[11px] font-semibold tracking-wider font-mono text-mute uppercase select-none">
-          Calculators
+          {getFooterString("calculators", locale)}
         </h4>
         <ul class="flex flex-col gap-2">
-          {calculators.map((item) => (
+          {localizedCalculators.map((item) => (
             <li>
-              <a href={item.href} class="text-[13px] text-body hover:text-ink hover:underline transition-colors block py-0.5 truncate max-w-full touch-manipulation">
+              <a href={item.href} class="text-[13px] text-body hover:text-ink hover:underline transition-colors block py-3 sm:py-0.5 truncate max-w-full touch-manipulation">
                 {item.title}
               </a>
             </li>
@@ -120,12 +245,16 @@ const legal = [
       <!-- Column 5: Resources -->
       <div class="flex flex-col gap-3 sm:gap-4">
         <h4 class="text-[11px] font-semibold tracking-wider font-mono text-mute uppercase select-none">
-          Resources
+          {getFooterString("resources", locale)}
         </h4>
         <ul class="flex flex-col gap-2">
-          {resources.map((item) => (
+          {localizedResources.map((item) => (
             <li>
-              <a href={item.href} class="text-[13px] text-body hover:text-ink hover:underline transition-colors block py-0.5 truncate max-w-full touch-manipulation">
+              <a 
+                href={item.href} 
+                aria-label={item.href.startsWith('mailto:') ? "Report a bug via email with pre-filled template" : undefined}
+                class="text-[13px] text-body hover:text-ink hover:underline transition-colors block py-3 sm:py-0.5 truncate max-w-full touch-manipulation"
+              >
                 {item.title}
               </a>
             </li>
@@ -136,12 +265,12 @@ const legal = [
       <!-- Column 6: Legal -->
       <div class="flex flex-col gap-3 sm:gap-4">
         <h4 class="text-[11px] font-semibold tracking-wider font-mono text-mute uppercase select-none">
-          Legal
+          {getFooterString("legal", locale)}
         </h4>
         <ul class="flex flex-col gap-2">
-          {legal.map((item) => (
+          {localizedLegal.map((item) => (
             <li>
-              <a href={item.href} class="text-[13px] text-body hover:text-ink hover:underline transition-colors block py-0.5 truncate max-w-full touch-manipulation">
+              <a href={item.href} class="text-[13px] text-body hover:text-ink hover:underline transition-colors block py-3 sm:py-0.5 truncate max-w-full touch-manipulation">
                 {item.title}
               </a>
             </li>
@@ -154,14 +283,14 @@ const legal = [
     <!-- Bottom Footer: Copyright & Additional Links -->
     <div class="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 pt-6 sm:pt-8 text-[12px] text-mute select-none font-mono w-full">
       <div>
-        &copy; {currentYear} UnitConverter. All Rights Reserved.
+        &copy; {currentYear} UnitConverter. {t('footer_rights', locale)}
       </div>
       <div class="flex items-center gap-3 sm:gap-4 flex-wrap justify-center">
-        <a href="/sitemap" class="hover:text-ink transition-colors py-1">Sitemap</a>
+        <a href={getLocalizedHref("/sitemap")} class="hover:text-ink transition-colors py-3.5 sm:py-1 inline-flex items-center">{getFooterString("sitemap", locale)}</a>
         <span aria-hidden="true">&bull;</span>
-        <a href="/privacy" class="hover:text-ink transition-colors py-1">Privacy Policy</a>
+        <a href={getLocalizedHref("/privacy")} class="hover:text-ink transition-colors py-3.5 sm:py-1 inline-flex items-center">{getFooterString("privacy_policy", locale)}</a>
         <span aria-hidden="true">&bull;</span>
-        <a href="/terms" class="hover:text-ink transition-colors py-1">Terms &amp; Conditions</a>
+        <a href={getLocalizedHref("/terms")} class="hover:text-ink transition-colors py-3.5 sm:py-1 inline-flex items-center">{getFooterString("terms_conditions", locale)}</a>
       </div>
     </div>
   </div>

@@ -1,0 +1,34 @@
+---
+export const prerender = false;
+Astro.response.headers.set('Cache-Control', 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800');
+
+import AboutPage from '../about.astro';
+import ContactPage from '../contact.astro';
+import PrivacyPage from '../privacy.astro';
+import TermsPage from '../terms.astro';
+import FavoritesPage from '../favorites.astro';
+import HistoryPage from '../history.astro';
+import DisclaimerPage from '../disclaimer.astro';
+import CookiesPage from '../cookies.astro';
+
+const { slug } = Astro.params;
+
+const pagesMap: Record<string, any> = {
+  'about': AboutPage,
+  'contact': ContactPage,
+  'privacy': PrivacyPage,
+  'terms': TermsPage,
+  'favorites': FavoritesPage,
+  'history': HistoryPage,
+  'disclaimer': DisclaimerPage,
+  'cookies': CookiesPage
+};
+
+const SelectedPage = pagesMap[slug || ''];
+
+if (!SelectedPage) {
+  return Astro.redirect('/404');
+}
+---
+
+<SelectedPage />

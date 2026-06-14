@@ -5,7 +5,10 @@ try {
   execSync('npx astro build', { stdio: 'inherit' });
 
   console.log('\n🚀 Deploying to Cloudflare Workers...');
-  execSync('npx wrangler deploy', { stdio: 'inherit' });
+  execSync('npx wrangler deploy --config dist/server/wrangler.json', { 
+    stdio: 'inherit',
+    env: { ...process.env, NODE_OPTIONS: '--dns-result-order=ipv4first' }
+  });
 
   console.log('\n✅ Deployment complete!');
 } catch (error) {

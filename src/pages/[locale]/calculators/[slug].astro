@@ -1,0 +1,57 @@
+---
+export const prerender = false;
+Astro.response.headers.set('Cache-Control', 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800');
+
+import AgeCalc from '../../calculators/age.astro';
+import AverageCalc from '../../calculators/average.astro';
+import BmiCalc from '../../calculators/bmi.astro';
+import BmrCalc from '../../calculators/bmr.astro';
+import CalorieCalc from '../../calculators/calorie.astro';
+import CompoundInterestCalc from '../../calculators/compound-interest.astro';
+import DateDifferenceCalc from '../../calculators/date-difference.astro';
+import DiscountCalc from '../../calculators/discount.astro';
+import EmiCalc from '../../calculators/emi.astro';
+import GpaCalc from '../../calculators/gpa.astro';
+import GstCalc from '../../calculators/gst.astro';
+import LoanCalc from '../../calculators/loan.astro';
+import MarksPercentageCalc from '../../calculators/marks-percentage.astro';
+import PercentageCalc from '../../calculators/percentage.astro';
+import ScientificCalc from '../../calculators/scientific.astro';
+import SimpleInterestCalc from '../../calculators/simple-interest.astro';
+import TimeDurationCalc from '../../calculators/time-duration.astro';
+
+const { slug } = Astro.params;
+
+// Select component
+const calcMap: Record<string, any> = {
+  'age': AgeCalc,
+  'average': AverageCalc,
+  'bmi': BmiCalc,
+  'bmr': BmrCalc,
+  'calorie': CalorieCalc,
+  'compound-interest': CompoundInterestCalc,
+  'date-difference': DateDifferenceCalc,
+  'discount': DiscountCalc,
+  'emi': EmiCalc,
+  'gpa': GpaCalc,
+  'gst': GstCalc,
+  'loan': LoanCalc,
+  'marks-percentage': MarksPercentageCalc,
+  'percentage': PercentageCalc,
+  'scientific': ScientificCalc,
+  'simple-interest': SimpleInterestCalc,
+  'time-duration': TimeDurationCalc
+};
+
+const SelectedCalc = calcMap[slug || ''];
+
+if (slug === 'interest') {
+  return Astro.redirect(`/${Astro.currentLocale}/calculators/compound-interest`);
+}
+
+if (!SelectedCalc) {
+  return Astro.redirect('/404');
+}
+---
+
+<SelectedCalc />

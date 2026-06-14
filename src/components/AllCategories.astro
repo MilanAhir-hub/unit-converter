@@ -1,5 +1,25 @@
 ---
 import { Icon } from 'astro-icon/components';
+import { t, translateCategory } from '../utils/i18n';
+
+const locale = Astro.currentLocale || 'en';
+
+const getLocalizedHref = (url: string) => {
+  if (locale === 'en') return url;
+  if (url.startsWith(`/${locale}`)) return url;
+  return `/${locale}${url}`;
+};
+
+const groupKeyMap: Record<string, string> = {
+  'Common Converters': 'group_common_converters',
+  'Digital & Computing': 'group_digital_computing',
+  'Engineering': 'group_engineering',
+  'Science & Physics': 'group_science_physics',
+  'Electrical': 'group_electrical',
+  'Mathematics': 'group_mathematics',
+  'Geometry': 'group_geometry',
+  'Finance': 'group_finance',
+};
 
 const categoryGroups = [
   {
@@ -82,6 +102,22 @@ const categoryGroups = [
     ]
   }
 ];
+
+const localizedGroups = categoryGroups.map(group => ({
+  title: t(groupKeyMap[group.title] || group.title, locale),
+  items: group.items.map(item => {
+    let title = item.title;
+    const slug = item.href.split('/').pop() || '';
+    const translated = translateCategory(slug, locale);
+    if (translated && translated !== slug) {
+      title = translated;
+    }
+    return {
+      title,
+      href: getLocalizedHref(item.href)
+    };
+  })
+}));
 ---
 
 <section class="py-12 sm:py-14 md:py-16 w-full text-left mt-8 sm:mt-10 md:mt-12">
@@ -89,17 +125,16 @@ const categoryGroups = [
     <!-- Section Title & Description -->
     <div class="mb-8 sm:mb-10 md:mb-12 text-center">
       <h2 class="text-2xl sm:text-3xl font-semibold tracking-[-0.03em] text-ink mb-2">
-        All Converter Categories
+        {t('section_all_categories', locale)}
       </h2>
       <p class="text-sm md:text-base text-body max-w-2xl mx-auto leading-relaxed px-2">
-        Browse our complete directory of converter categories and high-precision calculators to quickly locate and access the exact conversion tool you need.
+        {t('section_all_categories_desc', locale)}
       </p>
     </div>
 
     <!-- Category Groups Grid -->
-    <!-- Mobile: 1-col, SM: 2-col, MD: 3-col, LG: 4-col -->
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 sm:gap-x-8 gap-y-8 sm:gap-y-10 w-full">
-      {categoryGroups.map((group) => (
+      {localizedGroups.map((group) => (
         <div class="flex flex-col">
           <!-- Eyebrow Group Header (H3) -->
           <h3 class="text-[11px] font-semibold tracking-wider font-mono text-mute uppercase pb-2 mb-3 sm:mb-4 border-b border-hairline select-none">
@@ -112,7 +147,7 @@ const categoryGroups = [
               <li>
                 <a 
                   href={item.href}
-                  class="group flex items-center justify-between py-1 sm:py-0.5 text-[13.5px] text-body hover:text-ink transition-colors cursor-pointer touch-manipulation"
+                  class="group flex items-center justify-between py-3 sm:py-0.5 text-[13.5px] text-body hover:text-ink transition-colors cursor-pointer touch-manipulation"
                 >
                   <span class="truncate group-hover:underline">{item.title}</span>
                   <Icon 

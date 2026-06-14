@@ -2,23 +2,66 @@
 import { Icon } from 'astro-icon/components';
 import { navigationData, isCategory } from '../data/navigation';
 import { converterCategories } from '../utils/converter';
+import { t, translateCategory, translatePopularRoute } from '../utils/i18n';
 
 import Dropdown from './Dropdown.astro';
 
-// Stats data
+const locale = Astro.currentLocale || 'en';
+
+const getLocalizedHref = (url: string) => {
+  if (locale === 'en') return url;
+  if (url.startsWith(`/${locale}`)) return url;
+  return `/${locale}${url}`;
+};
+
+// Safe t() with English fallback for keys that may not exist in the i18n map
+const tSafe = (key: string, fallback: string): string => {
+  const v = t(key, locale);
+  return v && v !== key ? v : fallback;
+};
+
+// ── Stats data (with icons + animation metadata) ────────────────────────────
 const stats = [
-  { label: "Converter Categories", value: "200+" },
-  { label: "Unit Combinations", value: "10,000+" },
-  { label: "Calculations", value: "Instant" },
-  { label: "Access", value: "100% Free" }
+  {
+    label: t('stat_categories_label', locale),
+    value: '200+',
+    numericValue: 200,
+    suffix: '+',
+    icon: 'hugeicons:grid',
+    isText: false,
+  },
+  {
+    label: t('stat_combinations_label', locale),
+    value: '10,000+',
+    numericValue: 10000,
+    suffix: '+',
+    icon: 'hugeicons:shuffle',
+    isText: false,
+  },
+  {
+    label: t('stat_calculations_label', locale),
+    value: t('stat_calculations_value', locale),
+    numericValue: 0,
+    suffix: '',
+    icon: 'hugeicons:flash',
+    isText: true,
+  },
+  {
+    label: t('stat_free_label', locale),
+    value: t('stat_free_value', locale),
+    numericValue: 0,
+    suffix: '',
+    icon: 'hugeicons:square-unlock-01',
+    isText: true,
+  },
 ];
 
-// Quick Converter categories
-const quickCategories = ['length', 'weight-mass', 'temperature', 'area', 'volume', 'time']
+// ── Quick Converter categories ──────────────────────────────────────────────
+const quickCategories: typeof converterCategories = (['length', 'weight-mass', 'temperature', 'area', 'volume', 'time']
   .map(slug => converterCategories.find(c => c.slug === slug))
-  .filter(Boolean);
+  .filter(Boolean)) as typeof converterCategories;
 
-// Compile a flat searchable list for client-side vanilla JS
+// ── Flat searchable list ─────────────────────────────────────────────────────
 const searchableItems: any[] = [];
 
 navigationData.forEach((item) => {
@@ -41,168 +84,300 @@ navigationData.forEach((item) => {
   }
 });
 
+// ── Popular converters (8 cards) ─────────────────────────────────────────────
 const popularConverters = [
-  { title: "Length Converter", href: "/unit-converters/length", icon: "hugeicons:ruler" },
-  { title: "Weight Converter", href: "/unit-converters/weight-mass", icon: "hugeicons:weight-scale" },
-  { title: "Temperature Converter", href: "/unit-converters/temperature", icon: "hugeicons:thermometer" },
-  { title: "Area Converter", href: "/unit-converters/area", icon: "hugeicons:grid" },
-  { title: "Volume Converter", href: "/unit-converters/volume", icon: "hugeicons:cube" },
-  { title: "Time Converter", href: "/unit-converters/time", icon: "hugeicons:clock-01" },
-  { title: "Speed Converter", href: "/unit-converters/speed", icon: "hugeicons:dashboard-speed-01" },
-  { title: "Data Storage Converter", href: "/unit-converters/data-storage", icon: "hugeicons:hard-drive" },
+  { title: translateCategory('length', locale), href: getLocalizedHref('/unit-converters/length'), icon: 'hugeicons:ruler' },
+  { title: translateCategory('weight-mass', locale), href: getLocalizedHref('/unit-converters/weight-mass'), icon: 'hugeicons:weight-scale' },
+  { title: translateCategory('temperature', locale), href: getLocalizedHref('/unit-converters/temperature'), icon: 'hugeicons:thermometer' },
+  { title: translateCategory('area', locale), href: getLocalizedHref('/unit-converters/area'), icon: 'hugeicons:grid' },
+  { title: translateCategory('volume', locale), href: getLocalizedHref('/unit-converters/volume'), icon: 'hugeicons:cube' },
+  { title: translateCategory('time', locale), href: getLocalizedHref('/unit-converters/time'), icon: 'hugeicons:clock-01' },
+  { title: translateCategory('speed', locale), href: getLocalizedHref('/unit-converters/speed'), icon: 'hugeicons:dashboard-speed-01' },
+  { title: translateCategory('data-storage', locale), href: getLocalizedHref('/unit-converters/data-storage'), icon: 'hugeicons:hard-drive' },
 ];
 
+// ── Popular conversions (links + pills + trending) ──────────────────────────
 const popularConversions = [
-  { title: "CM to Inches", href: "/popular/cm-to-inches" },
-  { title: "Inches to CM", href: "/popular/inches-to-cm" },
-  { title: "KG to Pounds", href: "/popular/kg-to-pounds" },
-  { title: "Pounds to KG", href: "/popular/pounds-to-kg" },
-  { title: "KM to Miles", href: "/popular/km-to-miles" },
-  { title: "Miles to KM", href: "/popular/miles-to-km" },
-  { title: "Feet to Meters", href: "/popular/feet-to-meters" },
-  { title: "Meters to Feet", href: "/popular/meters-to-feet" },
+  { title: translatePopularRoute('cm-to-inches', locale, 'CM to Inches'), href: getLocalizedHref('/popular/cm-to-inches') },
+  { title: translatePopularRoute('inches-to-cm', locale, 'Inches to CM'), href: getLocalizedHref('/popular/inches-to-cm') },
+  { title: translatePopularRoute('kg-to-pounds', locale, 'KG to Pounds'), href: getLocalizedHref('/popular/kg-to-pounds') },
+  { title: translatePopularRoute('pounds-to-kg', locale, 'Pounds to KG'), href: getLocalizedHref('/popular/pounds-to-kg') },
+  { title: translatePopularRoute('km-to-miles', locale, 'KM to Miles'), href: getLocalizedHref('/popular/km-to-miles') },
+  { title: translatePopularRoute('miles-to-km', locale, 'Miles to KM'), href: getLocalizedHref('/popular/miles-to-km') },
+  { title: translatePopularRoute('feet-to-meters', locale, 'Feet to Meters'), href: getLocalizedHref('/popular/feet-to-meters') },
+  { title: translatePopularRoute('meters-to-feet', locale, 'Meters to Feet'), href: getLocalizedHref('/popular/meters-to-feet') },
 ];
 
-// Add popular conversions to searchable items
 popularConversions.forEach(item => {
-    searchableItems.push({
-        title: item.title,
-        href: item.href,
-        category: 'Popular Conversions'
-    });
+  searchableItems.push({
+    title: item.title,
+    href: item.href,
+    category: t('hero_section_popular_conversions', locale),
+  });
 });
 
-// Serialize for JS
+// ── Live ticker items (auto-scrolling marquee) ──────────────────────────────
+const tickerItems = [
+  '100°F = 37.78°C',
+  '5 mi = 8.05 km',
+  '1 kg = 2.205 lbs',
+  '1 ft = 30.48 cm',
+  '100 km/h = 62.14 mph',
+  '1 gal = 3.785 L',
+  '1 yd = 0.914 m',
+  '1 oz = 28.35 g',
+  '1 acre = 4047 m²',
+  '1 mile = 5280 ft',
+];
+
+// ── Localized labels for new UI elements ────────────────────────────────────
+const trendingLabel = tSafe('trending_label', 'Trending');
+const trendingCategory = tSafe('hero_section_popular_conversions', 'Popular conversions');
+const browseAllLabel = tSafe('hero_browse_all', 'Browse All Converters');
+const allCalculatorsLabel = tSafe('hero_all_calculators', 'All Calculators');
+const tipLabel = tSafe('hero_keyboard_tip', 'Tip: Press');
+const tipSearchLabel = tSafe('hero_keyboard_tip_search', 'to search');
+const tipFieldsLabel = tSafe('hero_keyboard_tip_fields', 'to switch fields');
+const swapTooltip = tSafe('hero_swap_tooltip', 'Swap');
+const copyTooltip = tSafe('hero_copy_tooltip', 'Copy result');
+
+// ── Payload for the client-side script ──────────────────────────────────────
 const quickCategoriesJson = JSON.stringify(quickCategories);
+const typingPhrases = [
+  t('hero_title_free_converter', locale),
+  translateCategory('bmi', locale),
+  translateCategory('scientific', locale),
+  t('hero_title_gst_loan', locale),
+  translateCategory('percentage', locale),
+  translateCategory('temperature', locale),
+  translateCategory('number-base', locale),
+];
+const trendingItemsJson = JSON.stringify(popularConversions.slice(0, 6));
+const tickerItemsJson = JSON.stringify(tickerItems);
 ---
 
 <section class="py-12 sm:py-16 md:py-20 lg:py-28 xl:py-36 flex flex-col items-center text-center max-w-6xl mx-auto w-full px-4">
-  
-  <!-- Hero Content -->
-  <div class="max-w-4xl mx-auto mb-10 sm:mb-14 md:mb-16 w-full">
-    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-[11px] font-mono text-primary uppercase tracking-widest mb-5 sm:mb-6 select-none">
-      <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-      Professional Grade Tools
-    </div>
-    
-    <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-[-0.04em] text-ink mb-5 sm:mb-6 md:mb-8 leading-tight min-h-[1.2em]">
-      <span id="hero-typing-title">Free Unit Converter</span><span class="inline-block w-[3px] h-[0.8em] ml-1 bg-ink align-middle" id="hero-typing-cursor"></span>
+
+  <!-- 1. Hero Badge -->
+  <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-[11px] font-mono text-primary uppercase tracking-widest mb-5 sm:mb-6 select-none">
+    <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+    {t('hero_badge', locale)}
+  </div>
+
+  <!-- 2. Hero Title (with subtle glow) -->
+  <div class="relative w-full max-w-4xl mx-auto mb-5 sm:mb-6 md:mb-8 hero-title-wrapper">
+    <div class="hero-glow" aria-hidden="true"></div>
+    <h1 class="relative z-10 text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-[-0.04em] text-ink leading-tight min-h-[1.2em]">
+      <span id="hero-typing-title"></span><span class="inline-block w-[3px] h-[0.8em] ml-1 bg-ink align-middle" id="hero-typing-cursor"></span>
     </h1>
+  </div>
 
-    <p class="text-base sm:text-lg md:text-xl text-body max-w-2xl mx-auto mb-8 sm:mb-10 leading-relaxed px-2">
-        Fast, accurate, and completely free. Instantly convert across hundreds of units and categories including length, mass, temperature, and more on any device.
-    </p>
+  <!-- 3. Subtitle -->
+  <p class="text-base sm:text-lg md:text-xl text-body max-w-2xl mx-auto mb-6 sm:mb-8 leading-relaxed px-2">
+    {t('hero_subtitle', locale)}
+  </p>
 
-    <!-- Spotlight Search Bar -->
-    <div class="relative w-full max-w-xl mx-auto mb-10 sm:mb-12">
-        <div class="relative flex items-center group">
-        <Icon name="hugeicons:search-02" class="absolute left-4 w-5 h-5 text-mute group-focus-within:text-primary transition-colors flex-shrink-0" />
-        <input 
-            id="hero-search-input"
-            type="text" 
-            placeholder="Search 200+ converters..."
-            class="w-full h-12 sm:h-14 pl-12 pr-4 sm:pr-12 bg-canvas border border-hairline rounded-md text-ink placeholder:text-mute focus:outline-none focus:border-primary/50 focus:bg-canvas transition-all text-sm shadow-[0_2px_4px_rgba(0,0,0,0.02)]"
-            autocomplete="off"
-        />
-        <div class="absolute right-4 px-1.5 py-0.5 border border-hairline rounded-sm bg-canvas-soft-2 text-[10px] font-mono text-mute select-none hidden sm:block">
-            /
-        </div>
-        </div>
-
-        <!-- Spotlight Dropdown results panel -->
-        <div 
-        id="search-results-panel"
-        class="absolute left-0 right-0 top-full mt-2 bg-canvas border border-hairline rounded-md shadow-2xl z-50 hidden max-h-72 sm:max-h-80 overflow-y-auto no-scrollbar text-left"
-        >
-        <div id="search-results-content" class="p-2 flex flex-col gap-0.5">
-            <!-- Generated dynamically by search script -->
-        </div>
-        </div>
+  <!-- 4. Live Conversion Ticker -->
+  <div class="w-full max-w-5xl mb-8 sm:mb-10">
+    <div class="ticker-mask relative overflow-hidden border-y border-hairline bg-canvas-soft-2/50">
+      <div class="ticker-track flex gap-3 w-max py-3" id="hero-ticker-track" data-items={tickerItemsJson}>
+        <!-- Items are duplicated in the script for seamless infinite scroll -->
+      </div>
     </div>
   </div>
 
-  <!-- Quick Converter Widget -->
-  <div class="w-full max-w-3xl bg-canvas border border-hairline rounded-md shadow-[0_1px_1px_rgba(0,0,0,0.02),0_4px_20px_rgba(0,0,0,0.05)] relative mb-12 sm:mb-16 md:mb-20 text-left">
-    <!-- Category Tabs -->
-    <div class="flex items-center gap-1 p-1 bg-canvas-soft-2 border-b border-hairline overflow-x-auto no-scrollbar rounded-t-md">
-        {quickCategories.map((cat, i) => (
-            <button 
-                class:list={[
-                    "quick-cat-tab px-3 sm:px-4 py-2 rounded-sm text-xs font-medium transition-all whitespace-nowrap flex-shrink-0",
-                    i === 0 ? "bg-canvas text-ink shadow-sm" : "text-body hover:text-ink"
-                ]}
-                data-slug={cat.slug}
-            >
-                {cat.label.replace(' Converter', '')}
-            </button>
-        ))}
+  <!-- 5. Spotlight Search Bar -->
+  <div class="relative w-full max-w-xl mx-auto mb-5 sm:mb-6">
+    <div class="relative flex items-center group">
+      <Icon name="hugeicons:search-02" class="absolute left-4 w-5 h-5 text-mute group-focus-within:text-primary transition-colors flex-shrink-0" />
+      <input
+        id="hero-search-input"
+        type="text"
+        placeholder={t('hero_search_placeholder', locale)}
+        class="w-full h-12 sm:h-14 pl-12 pr-4 sm:pr-12 bg-canvas border border-hairline rounded-md text-ink placeholder:text-mute focus:outline-none focus:border-primary/50 focus:bg-canvas transition-all text-sm shadow-[0_2px_4px_rgba(0,0,0,0.02)]"
+        autocomplete="off"
+      />
+      <div class="absolute right-4 px-1.5 py-0.5 border border-hairline rounded-sm bg-canvas-soft-2 text-[10px] font-mono text-mute select-none hidden sm:block">
+        /
+      </div>
     </div>
 
-    <div class="p-4 sm:p-6 md:p-8">
-        <!-- Mobile: stacked layout; MD+: 3-column grid -->
-        <div class="flex flex-col md:grid md:grid-cols-[1fr_auto_1fr] md:items-center gap-4 sm:gap-5 md:gap-6">
-            <!-- From Section -->
-            <div class="space-y-2 sm:space-y-3">
-                <label class="text-[10px] font-semibold font-mono text-mute uppercase tracking-wider">Amount</label>
-                <div class="flex flex-col gap-2">
-                    <input 
-                        id="quick-from-input"
-                        type="number" 
-                        value="1"
-                        class="w-full h-11 sm:h-12 px-4 bg-canvas-soft border border-hairline rounded-sm text-xl font-semibold text-ink focus:outline-none focus:border-primary/50 transition-all"
-                    />
-                    <Dropdown id="quick-from-select" options={[]} class="w-full" />
-                </div>
-            </div>
-
-            <!-- Swap Button -->
-            <div class="flex justify-center md:pt-6">
-                <button id="quick-swap-btn" class="w-10 h-10 rounded-full bg-canvas-soft-2 border border-hairline flex items-center justify-center text-ink hover:bg-primary hover:text-on-primary transition-all rotate-90 md:rotate-0 active:scale-95 touch-manipulation">
-                    <Icon name="hugeicons:exchange-01" class="w-4 h-4" />
-                </button>
-            </div>
-
-            <!-- To Section -->
-            <div class="space-y-2 sm:space-y-3">
-                <label class="text-[10px] font-semibold font-mono text-mute uppercase tracking-wider">Converted Result</label>
-                <div class="flex flex-col gap-2">
-                    <div id="quick-to-display" class="w-full h-11 sm:h-12 px-4 bg-canvas-soft-2 border border-hairline rounded-sm flex items-center text-xl font-semibold text-primary truncate">
-                        <!-- Result -->
-                    </div>
-                    <Dropdown id="quick-to-select" options={[]} class="w-full" />
-                </div>
-            </div>
-        </div>
-        <div class="mt-5 sm:mt-6 text-center">
-            <a id="quick-go-to-page" href="#" class="text-xs font-medium text-mute hover:text-primary transition-colors flex items-center justify-center gap-1.5">
-                Open full {quickCategories[0].label}
-                <Icon name="hugeicons:arrow-right-01" class="w-3.5 h-3.5" />
-            </a>
-        </div>
+    <!-- Spotlight results / trending panel -->
+    <div
+      id="search-results-panel"
+      class="absolute left-0 right-0 top-full mt-2 bg-canvas border border-hairline rounded-md shadow-2xl z-50 hidden max-h-72 sm:max-h-80 overflow-y-auto no-scrollbar text-left"
+    >
+      <div id="search-results-content" class="p-2 flex flex-col gap-0.5">
+        <!-- Generated dynamically -->
+      </div>
     </div>
   </div>
 
-  <!-- Trust Statistics -->
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 w-full mb-12 sm:mb-16 md:mb-20">
-    {stats.map(stat => (
-        <div class="p-4 sm:p-5 md:p-6 bg-canvas border border-hairline rounded-md text-center">
-            <div class="text-xl sm:text-2xl md:text-3xl font-bold text-ink mb-1">{stat.value}</div>
-            <div class="text-[9px] sm:text-[10px] font-mono text-mute uppercase tracking-wider leading-tight">{stat.label}</div>
-        </div>
+  <!-- 6. Popular Conversion Pills -->
+  <div class="w-full max-w-3xl mx-auto flex flex-wrap gap-2 justify-center mb-6 px-2">
+    {popularConversions.slice(0, 6).map((item) => (
+      <a
+        href={item.href}
+        class="inline-flex items-center gap-1 px-3 py-1.5 bg-canvas border border-hairline rounded-sm text-xs font-medium text-body hover:text-ink hover:border-hairline-strong transition-all touch-manipulation"
+      >
+        {item.title.replace(' to ', ' → ')}
+      </a>
     ))}
   </div>
 
-  <!-- Popular Converters Section -->
+  <!-- 7. CTA Buttons -->
+  <div class="flex items-center gap-3 justify-center mb-12 sm:mb-16 flex-wrap px-2">
+    <a
+      href={getLocalizedHref('/unit-converters/length')}
+      class="px-5 py-2.5 bg-primary text-on-primary rounded-md text-sm font-medium hover:opacity-90 transition-opacity touch-manipulation"
+    >
+      {browseAllLabel}
+    </a>
+    <a
+      href={getLocalizedHref('/calculators')}
+      class="px-5 py-2.5 bg-canvas border border-hairline rounded-md text-sm font-medium text-body hover:text-ink hover:border-hairline-strong transition-all touch-manipulation"
+    >
+      {allCalculatorsLabel}
+    </a>
+  </div>
+
+  <!-- 8. Quick Converter Widget -->
+  <div class="w-full max-w-3xl bg-canvas border border-hairline rounded-md shadow-[0_1px_1px_rgba(0,0,0,0.02),0_4px_20px_rgba(0,0,0,0.05)] relative mb-3 text-left">
+    <!-- Category Tabs -->
+    <div class="flex items-center gap-1 p-1 bg-canvas-soft-2 border-b border-hairline overflow-x-auto no-scrollbar rounded-t-md">
+      {quickCategories.map((cat, i) => {
+        if (!cat) return null;
+        const fullName = translateCategory(cat.slug, locale);
+        const shortName = fullName.replace(/ (Converter|Convertidor|Convertisseur|Conversor|Umrechner|محول|変換器|转换器|轉換器).*$/, '');
+        return (
+          <button
+            class:list={[
+              'quick-cat-tab px-3 sm:px-4 py-2 rounded-sm text-xs font-medium transition-all whitespace-nowrap flex-shrink-0',
+              i === 0 ? 'bg-canvas text-ink shadow-sm' : 'text-body hover:text-ink',
+            ]}
+            data-slug={cat.slug}
+          >
+            {shortName}
+          </button>
+        );
+      })}
+    </div>
+
+    <div class="p-4 sm:p-6 md:p-8">
+      <div class="flex flex-col md:grid md:grid-cols-[1fr_auto_1fr] md:items-center gap-4 sm:gap-5 md:gap-6">
+        <!-- From Section -->
+        <div class="space-y-2 sm:space-y-3">
+          <label class="text-[10px] font-semibold font-mono text-mute uppercase tracking-wider">{t('hero_quick_amount', locale)}</label>
+          <div class="flex flex-col gap-2">
+            <input
+              id="quick-from-input"
+              type="number"
+              value="1"
+              class="w-full h-11 sm:h-12 px-4 bg-canvas-soft border border-hairline rounded-sm text-xl font-semibold text-ink focus:outline-none focus:border-primary/50 transition-all"
+            />
+            <Dropdown id="quick-from-select" options={[]} class="w-full" />
+          </div>
+        </div>
+
+        <!-- Swap Button -->
+        <div class="flex justify-center md:pt-6">
+          <button
+            id="quick-swap-btn"
+            type="button"
+            class="quick-swap-btn group relative w-10 h-10 rounded-full bg-canvas-soft-2 border border-hairline flex items-center justify-center text-ink hover:bg-primary hover:text-on-primary transition-colors active:scale-95 touch-manipulation"
+            aria-label={swapTooltip}
+          >
+            <span class="swap-icon-inner inline-flex">
+              <Icon name="hugeicons:exchange-01" class="w-4 h-4" />
+            </span>
+            <span class="swap-tooltip absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-canvas border border-hairline rounded-sm text-[10px] font-mono text-ink opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-sm z-10">
+              {swapTooltip}
+            </span>
+          </button>
+        </div>
+
+        <!-- To Section -->
+        <div class="space-y-2 sm:space-y-3">
+          <label class="text-[10px] font-semibold font-mono text-mute uppercase tracking-wider">{t('hero_quick_result', locale)}</label>
+          <div class="flex flex-col gap-2">
+            <div class="flex items-stretch gap-1.5">
+              <div
+                id="quick-to-display"
+                class="flex-1 min-w-0 h-11 sm:h-12 px-4 bg-canvas-soft-2 border border-hairline rounded-sm flex items-center text-xl font-semibold text-primary truncate"
+              >
+                <!-- Result -->
+              </div>
+              <button
+                id="quick-copy-btn"
+                type="button"
+                class="w-11 sm:w-12 flex-shrink-0 border border-hairline rounded-sm text-mute hover:text-ink hover:bg-canvas-soft transition-all flex items-center justify-center touch-manipulation"
+                aria-label={copyTooltip}
+              >
+                <Icon name="hugeicons:copy-01" class="copy-icon w-4 h-4" />
+                <Icon name="hugeicons:tick-01" class="check-icon w-4 h-4 hidden text-primary" />
+                <span class="swap-tooltip absolute -top-9 left-1/2 -translate-x-1/2 px-2 py-1 bg-canvas border border-hairline rounded-sm text-[10px] font-mono text-ink opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-sm z-10 hidden">
+                  {copyTooltip}
+                </span>
+              </button>
+            </div>
+            <Dropdown id="quick-to-select" options={[]} class="w-full" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Formula Display -->
+      <div
+        id="quick-formula-display"
+        class="text-xs text-mute font-mono text-center mt-4 pt-4 border-t border-hairline min-h-[1.5em] select-none"
+      >
+        <!-- Formula injected dynamically -->
+      </div>
+
+      <!-- Open Full Link -->
+      <div class="mt-4 sm:mt-5 text-center">
+        <a id="quick-go-to-page" href="#" class="text-xs font-medium text-mute hover:text-primary transition-colors flex items-center justify-center gap-1.5">
+          {t('hero_open_full', locale)} {translateCategory(quickCategories[0]?.slug ?? 'length', locale)}
+          <Icon name="hugeicons:arrow-right-01" class="w-3.5 h-3.5" />
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. Keyboard Shortcut Hints -->
+  <div class="text-[10px] font-mono text-mute text-center mb-12 sm:mb-16 md:mb-20 select-none px-2">
+    {tipLabel} <kbd class="px-1 py-0.5 bg-canvas-soft-2 border border-hairline rounded-sm text-[9px] font-mono text-body">/</kbd> {tipSearchLabel} • <kbd class="px-1 py-0.5 bg-canvas-soft-2 border border-hairline rounded-sm text-[9px] font-mono text-body">Tab</kbd> {tipFieldsLabel}
+  </div>
+
+  <!-- 10. Trust Statistics -->
+  <div id="hero-stats" class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 w-full mb-12 sm:mb-16 md:mb-20">
+    {stats.map(stat => (
+      <div class="p-4 sm:p-5 md:p-6 bg-canvas border border-hairline rounded-md text-center">
+        <div class="w-8 h-8 rounded-sm bg-canvas-soft-2 flex items-center justify-center text-ink mb-2 mx-auto">
+          <Icon name={stat.icon} class="w-4 h-4" />
+        </div>
+        <div
+          class="stat-value text-xl sm:text-2xl md:text-3xl font-bold text-ink mb-1"
+          data-target={stat.numericValue}
+          data-suffix={stat.suffix}
+          data-istext={stat.isText ? 'true' : 'false'}
+          data-value={stat.value}
+        >{stat.value}</div>
+        <div class="text-[9px] sm:text-[10px] font-mono text-mute uppercase tracking-wider leading-tight">{stat.label}</div>
+      </div>
+    ))}
+  </div>
+
+  <!-- 11. Popular Converters Section -->
   <div class="w-full mb-12 sm:mb-14 md:mb-16">
     <div class="flex items-center justify-between mb-5 sm:mb-6 border-b border-hairline pb-2">
       <h2 class="text-xs font-semibold tracking-wider font-mono text-mute uppercase">
-        Popular Converters
+        {t('hero_section_popular_converters', locale)}
       </h2>
     </div>
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 w-full text-left">
       {popularConverters.map((item) => (
-        <a 
-          href={item.href} 
+        <a
+          href={item.href}
           class="group flex flex-col p-3 sm:p-4 bg-canvas border border-hairline rounded-md hover:border-hairline-strong hover:bg-canvas-soft-2 transition-all duration-200"
         >
           <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-sm bg-canvas-soft-2 flex items-center justify-center text-ink opacity-80 group-hover:opacity-100 transition-opacity flex-shrink-0">
@@ -210,10 +385,10 @@ const quickCategoriesJson = JSON.stringify(quickCategories);
           </div>
           <span class="text-xs sm:text-sm font-medium text-ink mt-2 sm:mt-3 leading-snug">{item.title}</span>
           <span class="text-[11px] text-body mt-1 group-hover:text-ink transition-colors flex items-center gap-1 font-sans">
-            Convert now 
-            <Icon 
-              name="hugeicons:arrow-right-01" 
-              class="w-3 h-3 translate-x-0 group-hover:translate-x-0.5 transition-transform flex-shrink-0" 
+            {t('hero_convert_now', locale)}
+            <Icon
+              name="hugeicons:arrow-right-01"
+              class="w-3 h-3 translate-x-0 group-hover:translate-x-0.5 transition-transform flex-shrink-0"
             />
           </span>
         </a>
@@ -221,33 +396,33 @@ const quickCategoriesJson = JSON.stringify(quickCategories);
     </div>
   </div>
 
-  <!-- Popular Conversions Section -->
+  <!-- 12. Popular Conversions Section -->
   <div class="w-full mb-12 sm:mb-14 md:mb-16">
     <div class="flex items-center justify-between mb-5 sm:mb-6 border-b border-hairline pb-2">
       <h2 class="text-xs font-semibold tracking-wider font-mono text-mute uppercase">
-        Popular Conversions
+        {t('hero_section_popular_conversions', locale)}
       </h2>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 w-full text-left">
       {popularConversions.map((item) => (
-        <a 
-          href={item.href} 
+        <a
+          href={item.href}
           class="group flex items-center justify-between px-3 py-3 bg-canvas border border-hairline rounded-md hover:border-hairline-strong hover:bg-canvas-soft-2 transition-all duration-200 text-[13px] font-medium text-ink cursor-pointer touch-manipulation"
         >
           <span class="truncate pr-2">{item.title}</span>
-          <Icon 
-            name="hugeicons:arrow-right-01" 
-            class="w-4 h-4 text-mute group-hover:text-ink group-hover:translate-x-0.5 transition-all flex-shrink-0" 
+          <Icon
+            name="hugeicons:arrow-right-01"
+            class="w-4 h-4 text-mute group-hover:text-ink group-hover:translate-x-0.5 transition-all flex-shrink-0"
           />
         </a>
       ))}
     </div>
   </div>
 
-  <!-- SEO Content Block -->
+  <!-- 13. SEO Content Block -->
   <div class="w-full max-w-4xl text-left pt-10 sm:pt-12 border-t border-hairline">
     <p class="text-xs sm:text-sm text-mute leading-relaxed">
-        UnitConverter provides a comprehensive suite of measurement conversion tools designed for students, engineers, scientists, and everyday users. Our platform supports hundreds of categories including metric and imperial systems, scientific units, and specialized engineering measurements. From simple length and mass conversions to complex energy and pressure calculations, we ensure high-precision results instantly and for free. Our mobile-friendly interface and fast search engine help you find and perform calculations on the go, making it the most reliable resource for all your educational and professional unit conversion needs.
+      {t('hero_seo_text', locale)}
     </p>
   </div>
 </section>
@@ -256,7 +431,6 @@ const quickCategoriesJson = JSON.stringify(quickCategories);
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-  /* Ensure number inputs don't overflow on mobile */
   input[type=number]::-webkit-inner-spin-button,
   input[type=number]::-webkit-outer-spin-button {
     -webkit-appearance: none;
@@ -271,59 +445,159 @@ const quickCategoriesJson = JSON.stringify(quickCategories);
   #hero-typing-cursor {
     animation: blink 0.8s infinite;
   }
+
+  /* ── Hero glow (subtle radial behind title) ────────────────────────────── */
+  .hero-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 600px;
+    height: 320px;
+    max-width: 90%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(ellipse at center, rgba(0, 112, 243, 0.07) 0%, rgba(0, 112, 243, 0.02) 35%, transparent 70%);
+    z-index: 0;
+    pointer-events: none;
+    border-radius: 50%;
+    animation: hero-glow-pulse 5s ease-in-out infinite;
+  }
+  :global(.dark) .hero-glow {
+    background: radial-gradient(ellipse at center, rgba(0, 112, 243, 0.12) 0%, rgba(0, 112, 243, 0.04) 35%, transparent 70%);
+  }
+  @keyframes hero-glow-pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  /* ── Ticker marquee (right-to-left, seamless loop) ─────────────────────── */
+  .ticker-mask {
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+  }
+  .ticker-track {
+    animation: ticker-scroll 45s linear infinite;
+    will-change: transform;
+  }
+  .ticker-mask:hover .ticker-track {
+    animation-play-state: paused;
+  }
+  @keyframes ticker-scroll {
+    0%   { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(-50%, 0, 0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ticker-track { animation-duration: 90s; }
+  }
+
+  /* ── Swap button spring rotation ──────────────────────────────────────── */
+  .swap-icon-inner {
+    display: inline-flex;
+    transition: transform 450ms cubic-bezier(0.16, 1, 0.3, 1);
+    transform: rotate(0deg);
+  }
+  .quick-swap-btn.is-swapping .swap-icon-inner {
+    transform: rotate(180deg);
+  }
+  .quick-swap-btn .swap-tooltip {
+    position: absolute;
+  }
+
+  /* ── Reduced motion safety net ─────────────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .hero-glow { animation: none; opacity: 0.8; }
+  }
 </style>
 
-<script define:vars={{ searchableItems, quickCategoriesJson }}>
+<script
+  define:vars={{
+    searchableItems,
+    quickCategoriesJson,
+    typingPhrases,
+    searchNoResults: t('search_no_results', locale),
+    heroOpenFull: t('hero_open_full', locale),
+    trendingItems: trendingItemsJson,
+    trendingLabel,
+    trendingCategory,
+  }}
+>
   function setupHero() {
+    // ════════════════════════════════════════════════════════════════════════
+    //  Search + Trending
+    // ════════════════════════════════════════════════════════════════════════
     const searchInput = document.getElementById('hero-search-input');
     const resultsPanel = document.getElementById('search-results-panel');
     const resultsContent = document.getElementById('search-results-content');
-    
+
     if (!searchInput || !resultsPanel || !resultsContent) return;
 
     let selectedIndex = -1;
     let currentResults = [];
+    let lastRenderedMode = '';
 
-    const updateSearch = () => {
-      const query = searchInput.value.trim().toLowerCase();
-      if (!query) {
-        resultsPanel.classList.add('hidden');
-        selectedIndex = -1;
-        return;
-      }
+    const escapeHtml = (s) =>
+      String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 
-      currentResults = searchableItems.filter(item => 
-        item.title.toLowerCase().includes(query) || 
-        item.category.toLowerCase().includes(query)
+    const renderTrending = () => {
+      lastRenderedMode = 'trending';
+      let html =
+        '<div class="px-3 pt-2 pb-1 text-[10px] font-semibold font-mono tracking-wider text-mute uppercase select-none flex items-center gap-1.5">' +
+        '<span class="text-mute">↗</span> ' + escapeHtml(trendingLabel) +
+        '</div>';
+      const items = trendingItems || [];
+      items.forEach((item, index) => {
+        html +=
+          '<a href="' + escapeHtml(item.href) + '" data-search-index="' + index + '" class="flex items-center justify-between px-3 py-2 rounded-sm text-sm text-body hover:bg-canvas-soft-2 hover:text-ink transition-colors cursor-pointer">' +
+          '<span class="font-medium truncate pr-4">' + escapeHtml(item.title) + '</span>' +
+          '<span class="text-[10px] text-mute font-mono flex-shrink-0 hidden sm:block">/ ' + escapeHtml(trendingCategory) + '</span>' +
+          '</a>';
+      });
+      resultsContent.innerHTML = html;
+      selectedIndex = -1;
+      resultsPanel.classList.remove('hidden');
+    };
+
+    const renderSearchResults = (query) => {
+      lastRenderedMode = 'search';
+      currentResults = searchableItems.filter(
+        (item) =>
+          item.title.toLowerCase().includes(query) ||
+          item.category.toLowerCase().includes(query)
       );
 
       if (currentResults.length === 0) {
-        resultsContent.innerHTML = `
-          <div class="px-4 py-6 text-center text-sm text-body select-none">
-            No results found for <span class="font-medium text-ink">"${searchInput.value}"</span>
-          </div>
-        `;
+        resultsContent.innerHTML =
+          '<div class="px-4 py-6 text-center text-sm text-body select-none">' +
+          searchNoResults +
+          ' <span class="font-medium text-ink">"' + escapeHtml(searchInput.value) + '"</span>' +
+          '</div>';
         resultsPanel.classList.remove('hidden');
         selectedIndex = -1;
         return;
       }
 
-      const displayedResults = currentResults.slice(0, 15);
+      const displayed = currentResults.slice(0, 15);
       const grouped = {};
-      displayedResults.forEach((item, index) => {
+      displayed.forEach((item, index) => {
         if (!grouped[item.category]) grouped[item.category] = [];
         grouped[item.category].push(Object.assign({}, item, { globalIndex: index }));
       });
 
       let html = '';
       for (const [category, items] of Object.entries(grouped)) {
-        html += `<div class="px-3 pt-3 pb-1 text-[10px] font-semibold font-mono tracking-wider text-mute uppercase select-none border-t border-hairline first:border-0 first:pt-1">${category}</div>`;
-        items.forEach(item => {
-          html += `
-            <a href="${item.href}" data-search-index="${item.globalIndex}" class="flex items-center justify-between px-3 py-2 rounded-sm text-sm text-body hover:bg-canvas-soft-2 hover:text-ink transition-colors cursor-pointer">
-              <span class="font-medium truncate pr-4">${item.title}</span>
-              <span class="text-[10px] text-mute font-mono flex-shrink-0 hidden sm:block">/ ${item.category}</span>
-            </a>`;
+        html +=
+          '<div class="px-3 pt-3 pb-1 text-[10px] font-semibold font-mono tracking-wider text-mute uppercase select-none border-t border-hairline first:border-0 first:pt-1">' +
+          escapeHtml(category) + '</div>';
+        items.forEach((item) => {
+          html +=
+            '<a href="' + escapeHtml(item.href) + '" data-search-index="' + item.globalIndex + '" class="flex items-center justify-between px-3 py-2 rounded-sm text-sm text-body hover:bg-canvas-soft-2 hover:text-ink transition-colors cursor-pointer">' +
+            '<span class="font-medium truncate pr-4">' + escapeHtml(item.title) + '</span>' +
+            '<span class="text-[10px] text-mute font-mono flex-shrink-0 hidden sm:block">/ ' + escapeHtml(item.category) + '</span>' +
+            '</a>';
         });
       }
 
@@ -333,9 +607,28 @@ const quickCategoriesJson = JSON.stringify(quickCategories);
       highlightItem();
     };
 
+    const hidePanel = () => {
+      resultsPanel.classList.add('hidden');
+      selectedIndex = -1;
+    };
+
+    const handleInputChange = () => {
+      const query = searchInput.value.trim().toLowerCase();
+      if (!query) {
+        if (document.activeElement === searchInput) {
+          renderTrending();
+        } else {
+          hidePanel();
+        }
+        currentResults = [];
+        return;
+      }
+      renderSearchResults(query);
+    };
+
     const highlightItem = () => {
       const links = resultsContent.querySelectorAll('a[data-search-index]');
-      links.forEach(link => {
+      links.forEach((link) => {
         const idx = parseInt(link.getAttribute('data-search-index'), 10);
         if (idx === selectedIndex) {
           link.classList.add('bg-canvas-soft-2', 'text-ink');
@@ -352,22 +645,28 @@ const quickCategoriesJson = JSON.stringify(quickCategories);
       if (e.key === '/' && document.activeElement !== searchInput) {
         e.preventDefault();
         searchInput.focus();
+        if (!searchInput.value.trim()) renderTrending();
       }
     };
 
-    const onInput = updateSearch;
     const onFocus = () => {
-      if (searchInput.value.trim()) resultsPanel.classList.remove('hidden');
+      if (searchInput.value.trim()) {
+        renderSearchResults(searchInput.value.trim().toLowerCase());
+      } else {
+        renderTrending();
+      }
     };
 
     const onGlobalClick = (e) => {
       if (!searchInput.contains(e.target) && !resultsPanel.contains(e.target)) {
-        resultsPanel.classList.add('hidden');
+        hidePanel();
       }
     };
 
     const onInputKeyDown = (e) => {
-      const limit = Math.min(currentResults.length, 15);
+      const limit =
+        lastRenderedMode === 'search' ? Math.min(currentResults.length, 15) : (trendingItems || []).length;
+      if (limit === 0) return;
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         selectedIndex = (selectedIndex + 1) % limit;
@@ -377,22 +676,47 @@ const quickCategoriesJson = JSON.stringify(quickCategories);
         selectedIndex = (selectedIndex - 1 + limit) % limit;
         highlightItem();
       } else if (e.key === 'Enter') {
-        if (selectedIndex >= 0 && selectedIndex < limit) {
+        if (selectedIndex < 0) return;
+        if (lastRenderedMode === 'search' && selectedIndex < currentResults.length) {
           window.location.href = currentResults[selectedIndex].href;
+        } else if (lastRenderedMode === 'trending' && selectedIndex < (trendingItems || []).length) {
+          window.location.href = trendingItems[selectedIndex].href;
         }
       } else if (e.key === 'Escape') {
-        resultsPanel.classList.add('hidden');
+        hidePanel();
         searchInput.blur();
       }
     };
 
     document.addEventListener('keydown', onGlobalKeyDown);
-    searchInput.addEventListener('input', onInput);
+    searchInput.addEventListener('input', handleInputChange);
     searchInput.addEventListener('focus', onFocus);
     document.addEventListener('click', onGlobalClick);
     searchInput.addEventListener('keydown', onInputKeyDown);
 
-    // ── Quick Converter Logic ──────────────────────────────────────────────────
+    // ════════════════════════════════════════════════════════════════════════
+    //  Ticker — duplicate items for seamless infinite scroll
+    // ════════════════════════════════════════════════════════════════════════
+    const tickerTrack = document.getElementById('hero-ticker-track');
+    if (tickerTrack) {
+      try {
+        const items = JSON.parse(tickerTrack.getAttribute('data-items') || '[]');
+        if (Array.isArray(items) && items.length > 0) {
+          const makePill = (text) =>
+            '<span class="inline-flex items-center gap-1.5 px-3 py-1 bg-canvas border border-hairline rounded-sm text-xs font-mono text-body whitespace-nowrap">' +
+            '<span class="w-1 h-1 rounded-full bg-primary/60"></span>' + escapeHtml(text) +
+            '</span>';
+          const html = items.map(makePill).join('') + items.map(makePill).join('');
+          tickerTrack.innerHTML = html;
+        }
+      } catch (e) {
+        tickerTrack.innerHTML = '';
+      }
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    //  Quick Converter
+    // ════════════════════════════════════════════════════════════════════════
     const categories = JSON.parse(quickCategoriesJson);
     let currentCat = categories[0];
 
@@ -401,129 +725,289 @@ const quickCategoriesJson = JSON.stringify(quickCategories);
     const toSelect = document.getElementById('quick-to-select');
     const toDisplay = document.getElementById('quick-to-display');
     const swapBtn = document.getElementById('quick-swap-btn');
+    const copyBtn = document.getElementById('quick-copy-btn');
+    const formulaDisplay = document.getElementById('quick-formula-display');
     const catTabs = document.querySelectorAll('.quick-cat-tab');
     const goBtn = document.getElementById('quick-go-to-page');
 
     if (!fromInput || !fromSelect || !toSelect || !toDisplay || !swapBtn) return;
 
-    const populateUnits = () => {
-      const units = currentCat.units.map(u => ({
-        key: u.key,
-        label: u.label,
-        symbol: u.symbol
-      }));
+    // ── Formula helpers ────────────────────────────────────────────────────
+    const fmtNum = (n) => {
+      if (!isFinite(n)) return '—';
+      const s = n.toFixed(6);
+      return parseFloat(s).toString();
+    };
 
-      if (fromSelect.updateOptions) {
-        fromSelect.updateOptions(units, currentCat.defaultFrom);
-      }
-      if (toSelect.updateOptions) {
-        toSelect.updateOptions(units, currentCat.defaultTo);
-      }
+    const fmtMult = (m) => {
+      if (!isFinite(m) || m === 0) return '0';
+      const s = m.toFixed(6);
+      return parseFloat(s).toString();
+    };
 
-      if (goBtn) {
-        goBtn.href = `/unit-converters/${currentCat.slug}`;
-        goBtn.innerHTML = `Open full ${currentCat.label} <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>`;
+    const convertTemperature = (val, fromKey, toKey) => {
+      let k;
+      if (fromKey === 'celsius') k = val + 273.15;
+      else if (fromKey === 'fahrenheit') k = ((val - 32) * 5) / 9 + 273.15;
+      else if (fromKey === 'kelvin') k = val;
+      else k = val;
+      if (toKey === 'celsius') return k - 273.15;
+      if (toKey === 'fahrenheit') return ((k - 273.15) * 9) / 5 + 32;
+      return k;
+    };
+
+    const getTemperatureFormula = (val, fromUnit, toUnit, result) => {
+      const fs = fromUnit.symbol || fromUnit.key;
+      const ts = toUnit.symbol || toUnit.key;
+      const r = fmtNum(result);
+      const fk = fromUnit.key;
+      const tk = toUnit.key;
+      const v = val;
+      if (fk === tk) return v + ' ' + fs + ' = ' + r + ' ' + ts;
+      if (fk === 'celsius' && tk === 'fahrenheit') return v + '°C × 9/5 + 32 = ' + r + '°F';
+      if (fk === 'fahrenheit' && tk === 'celsius') return '(' + v + '°F − 32) × 5/9 = ' + r + '°C';
+      if (fk === 'celsius' && tk === 'kelvin') return v + '°C + 273.15 = ' + r + ' K';
+      if (fk === 'kelvin' && tk === 'celsius') return v + ' K − 273.15 = ' + r + '°C';
+      if (fk === 'fahrenheit' && tk === 'kelvin') return '(' + v + '°F − 32) × 5/9 + 273.15 = ' + r + ' K';
+      if (fk === 'kelvin' && tk === 'fahrenheit') return '(' + v + ' K − 273.15) × 9/5 + 32 = ' + r + '°F';
+      return v + ' ' + fs + ' = ' + r + ' ' + ts;
+    };
+
+    const getGenericFormula = (val, fromUnit, toUnit, multiplier, result) => {
+      const fs = fromUnit.symbol || fromUnit.label;
+      const ts = toUnit.symbol || toUnit.label;
+      if (fromUnit.key === toUnit.key) {
+        return val + ' ' + fs + ' = ' + fmtNum(result) + ' ' + ts;
       }
-      updateConversion();
+      return val + ' ' + fs + ' × ' + fmtMult(multiplier) + ' = ' + fmtNum(result) + ' ' + ts;
+    };
+
+    // ── State / DOM helpers ────────────────────────────────────────────────
+    const STORAGE_KEY = 'lastConverterTab';
+
+    const readStoredSlug = () => {
+      try {
+        const v = localStorage.getItem(STORAGE_KEY);
+        if (v && categories.find((c) => c.slug === v)) return v;
+      } catch (e) {}
+      return null;
+    };
+
+    const persistSlug = (slug) => {
+      try { localStorage.setItem(STORAGE_KEY, slug); } catch (e) {}
     };
 
     const updateConversion = () => {
       const val = parseFloat(fromInput.value);
       if (isNaN(val)) {
-        toDisplay.innerText = '—';
+        toDisplay.textContent = '—';
+        if (formulaDisplay) formulaDisplay.textContent = '';
         return;
       }
 
-      const fromUnit = currentCat.units.find(u => u.key === fromSelect.value);
-      const toUnit = currentCat.units.find(u => u.key === toSelect.value);
+      const fromUnit = currentCat.units.find((u) => u.key === fromSelect.value);
+      const toUnit = currentCat.units.find((u) => u.key === toSelect.value);
 
-      if (!fromUnit || !toUnit) return;
+      if (!fromUnit || !toUnit) {
+        toDisplay.textContent = '—';
+        if (formulaDisplay) formulaDisplay.textContent = '';
+        return;
+      }
 
-      let result;
-      // Temp special case
+      let result, multiplier = 1;
       if (currentCat.slug === 'temperature') {
-        let k;
-        if (fromUnit.key === 'celsius') k = val + 273.15;
-        else if (fromUnit.key === 'fahrenheit') k = (val - 32) * 5 / 9 + 273.15;
-        else k = val;
-
-        if (toUnit.key === 'celsius') result = k - 273.15;
-        else if (toUnit.key === 'fahrenheit') result = (k - 273.15) * 9 / 5 + 32;
-        else result = k;
+        result = convertTemperature(val, fromUnit.key, toUnit.key);
       } else {
         const base = val * (fromUnit.factor || 1);
         result = base / (toUnit.factor || 1);
+        multiplier = (toUnit.factor || 1) / (fromUnit.factor || 1);
       }
 
-      toDisplay.innerText = parseFloat(result.toFixed(6)).toString();
+      toDisplay.textContent = fmtNum(result);
+
+      if (formulaDisplay) {
+        if (currentCat.slug === 'temperature') {
+          formulaDisplay.textContent = getTemperatureFormula(val, fromUnit, toUnit, result);
+        } else {
+          formulaDisplay.textContent = getGenericFormula(val, fromUnit, toUnit, multiplier, result);
+        }
+      }
     };
 
-    catTabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        catTabs.forEach(t => t.classList.remove('bg-canvas', 'text-ink', 'shadow-sm'));
-        catTabs.forEach(t => t.classList.add('text-body'));
-        tab.classList.add('bg-canvas', 'text-ink', 'shadow-sm');
-        tab.classList.remove('text-body');
+    const populateUnits = () => {
+      const units = currentCat.units.map((u) => ({
+        key: u.key,
+        label: u.label,
+        symbol: u.symbol,
+      }));
 
-        currentCat = categories.find(c => c.slug === tab.dataset.slug);
-        populateUnits();
+      if (fromSelect.updateOptions) fromSelect.updateOptions(units, currentCat.defaultFrom);
+      if (toSelect.updateOptions) toSelect.updateOptions(units, currentCat.defaultTo);
+
+      if (goBtn) {
+        goBtn.href = '/unit-converters/' + currentCat.slug;
+        goBtn.innerHTML =
+          heroOpenFull + ' ' + escapeHtml(currentCat.label) +
+          ' <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>';
+      }
+      updateConversion();
+    };
+
+    const selectTab = (slug, persist) => {
+      const targetSlug = categories.find((c) => c.slug === slug) ? slug : categories[0].slug;
+      catTabs.forEach((t) => {
+        t.classList.remove('bg-canvas', 'text-ink', 'shadow-sm');
+        t.classList.add('text-body');
       });
+      const tabEl = Array.from(catTabs).find((t) => t.dataset.slug === targetSlug);
+      if (tabEl) {
+        tabEl.classList.add('bg-canvas', 'text-ink', 'shadow-sm');
+        tabEl.classList.remove('text-body');
+      }
+      currentCat = categories.find((c) => c.slug === targetSlug);
+      if (persist) persistSlug(targetSlug);
+      populateUnits();
+    };
+
+    catTabs.forEach((tab) => {
+      tab.addEventListener('click', () => selectTab(tab.dataset.slug, true));
     });
 
     fromInput.addEventListener('input', updateConversion);
     fromSelect.addEventListener('change', updateConversion);
     toSelect.addEventListener('change', updateConversion);
 
+    // Swap with spring rotation feedback
     const onSwapClick = () => {
       const temp = fromSelect.value;
       fromSelect.value = toSelect.value;
       toSelect.value = temp;
 
-      // If toDisplay has a value, move it to fromInput
-      const res = toDisplay.innerText;
-      if (res !== '—') fromInput.value = res;
+      swapBtn.classList.add('is-swapping');
+      setTimeout(() => swapBtn.classList.remove('is-swapping'), 450);
 
       updateConversion();
     };
     swapBtn.addEventListener('click', onSwapClick);
 
-    const tryPopulate = () => {
-      if (typeof window.initDropdowns === 'function') {
-        window.initDropdowns();
-      }
+    // Copy result
+    if (copyBtn) {
+      const copyIcon = copyBtn.querySelector('.copy-icon');
+      const checkIcon = copyBtn.querySelector('.check-icon');
+      copyBtn.addEventListener('click', async () => {
+        const text = toDisplay.textContent && toDisplay.textContent.trim();
+        if (!text || text === '—') return;
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(text);
+          } else {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+          }
+          if (copyIcon) copyIcon.classList.add('hidden');
+          if (checkIcon) checkIcon.classList.remove('hidden');
+          setTimeout(() => {
+            if (copyIcon) copyIcon.classList.remove('hidden');
+            if (checkIcon) checkIcon.classList.add('hidden');
+          }, 2000);
+        } catch (e) {
+          // Silently fail — no toast needed for this light interaction
+        }
+      });
+    }
+
+    // Boot the converter when dropdowns are ready
+    const tryBoot = () => {
+      if (typeof window.initDropdowns === 'function') window.initDropdowns();
       if (fromSelect.updateOptions && toSelect.updateOptions) {
-        populateUnits();
+        const stored = readStoredSlug();
+        selectTab(stored || categories[0].slug, false);
       } else {
-        setTimeout(tryPopulate, 30);
+        setTimeout(tryBoot, 30);
       }
     };
-    tryPopulate();
+    tryBoot();
 
-    // ── Typing Effect Logic ──────────────────────────────────────────────────
+    // ════════════════════════════════════════════════════════════════════════
+    //  Stats — scroll-triggered count-up
+    // ════════════════════════════════════════════════════════════════════════
+    const statValues = document.querySelectorAll('.stat-value');
+    if (statValues.length > 0) {
+      const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+
+      const animateCount = (el) => {
+        if (el.dataset.istext === 'true') {
+          el.textContent = el.dataset.value || el.textContent;
+          return;
+        }
+        const target = parseInt(el.dataset.target || '0', 10);
+        const suffix = el.dataset.suffix || '';
+        if (!isFinite(target) || target <= 0) {
+          el.textContent = el.dataset.value || el.textContent;
+          return;
+        }
+        const duration = 1500;
+        const start = performance.now();
+        const step = (now) => {
+          const elapsed = now - start;
+          const progress = Math.min(elapsed / duration, 1);
+          const eased = easeOutCubic(progress);
+          const current = Math.floor(eased * target);
+          const formatted = current.toLocaleString('en-US');
+          el.textContent = formatted + (progress === 1 ? suffix : '');
+          if (progress < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      };
+
+      const statSection = document.getElementById('hero-stats');
+      if (statSection && 'IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                statValues.forEach(animateCount);
+                observer.unobserve(entry.target);
+              }
+            });
+          },
+          { threshold: 0.3 }
+        );
+        observer.observe(statSection);
+      } else {
+        statValues.forEach(animateCount);
+      }
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    //  Hero Typing Animation (starts empty, types within 500ms)
+    // ════════════════════════════════════════════════════════════════════════
     const typingTitle = document.getElementById('hero-typing-title');
     if (typingTitle) {
       if (window.heroTypingTimeout) {
         clearTimeout(window.heroTypingTimeout);
       }
 
-      const phrases = [
-        "Free Unit Converter",
-        "BMI Calculator",
-        "Scientific Calculator",
-        "GST & Loan Calculator",
-        "Percentage Calculator",
-        "Temperature Converter",
-        "Number Base Converter"
-      ];
-      
+      const phrases = Array.isArray(typingPhrases) && typingPhrases.length > 0
+        ? typingPhrases
+        : [''];
+
       let phraseIndex = 0;
       let isDeleting = false;
-      let text = phrases[0];
-      let charIndex = text.length;
+      let text = '';
+      let charIndex = 0;
+
+      typingTitle.textContent = '';
 
       const type = () => {
-        const currentPhrase = phrases[phraseIndex];
-        
+        const currentPhrase = phrases[phraseIndex] || '';
+
         if (isDeleting) {
           text = currentPhrase.substring(0, charIndex - 1);
           charIndex--;
@@ -536,13 +1020,13 @@ const quickCategoriesJson = JSON.stringify(quickCategories);
 
         let typingSpeed = isDeleting ? 35 : 65;
 
-        if (!isDeleting && charIndex === currentPhrase.length) {
-          typingSpeed = 2500; // Pause at end of phrase
+        if (!isDeleting && charIndex === currentPhrase.length && currentPhrase.length > 0) {
+          typingSpeed = 2500; // pause at end of phrase
           isDeleting = true;
         } else if (isDeleting && charIndex === 0) {
           isDeleting = false;
           phraseIndex = (phraseIndex + 1) % phrases.length;
-          typingSpeed = 400; // Pause before typing next phrase
+          typingSpeed = 400; // pause before typing next phrase
         }
 
         if (document.getElementById('hero-typing-title')) {
@@ -550,12 +1034,11 @@ const quickCategoriesJson = JSON.stringify(quickCategories);
         }
       };
 
-      // Start the typing loop after an initial pause
-      window.heroTypingTimeout = setTimeout(type, 2500);
+      window.heroTypingTimeout = setTimeout(type, 500);
     }
   }
 
-  // Run on page load
+  // ── Run on initial load + Astro view transitions ──────────────────────────
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', setupHero);
   } else {

@@ -1,0 +1,455 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { Icon } from 'astro-icon/components';
+import { converterCategories } from '../utils/converter';
+import Dropdown from '../components/Dropdown.astro';
+
+// Dynamically list categories available in the converter logic
+const categories = converterCategories.map(c => 
+  c.label.replace(" Converter", "").replace(" & Mass", "").trim()
+);
+const uniqueCategories = ['All Categories', ...new Set(categories)];
+
+// Build category slug mapping for client-side redirection
+const categorySlugMap = converterCategories.reduce((acc, cat) => {
+  const cleanLabel = cat.label.replace(" Converter", "").replace(" & Mass", "").trim();
+  acc[cleanLabel.toLowerCase()] = cat.slug;
+  return acc;
+}, {} as Record<string, string>);
+
+const serializedSlugMap = JSON.stringify(categorySlugMap);
+
+const seoTitle = "Favorite Measurements | Real Unit Converter";
+const seoDescription = "Access your saved conversion results quickly and reuse or manage them.";
+---
+
+<Layout title={seoTitle} description={seoDescription}>
+  <div class="max-w-6xl mx-auto py-6 sm:py-10 md:py-16 px-4 font-sans">
+
+    <!-- ── Breadcrumbs ──────────────────────────────────────────────────────── -->
+    <nav class="flex items-center gap-1.5 sm:gap-2 mb-5 sm:mb-6 text-[10px] sm:text-[11px] font-mono text-mute uppercase tracking-widest overflow-x-auto no-scrollbar whitespace-nowrap pb-1" aria-label="Breadcrumb">
+      <a href="/" class="hover:text-ink transition-colors">Home</a>
+      <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
+      <span class="text-ink font-semibold">Favorites</span>
+    </nav>
+
+    <!-- ── Page Header ─────────────────────────────────────────────────────── -->
+    <header class="mb-7 sm:mb-10">
+      <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-[-0.04em] text-ink mb-3 sm:mb-4 leading-tight font-sans">Favorite Measurements</h1>
+      <p class="text-body max-w-2xl leading-relaxed text-sm">Access your saved conversion results quickly.</p>
+    </header>
+
+    <!-- ── Search & Filter Controls ─────────────────────────────────────────── -->
+    <div id="controls-section" class="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between mb-8 sm:mb-10 hidden">
+      <div class="flex-grow flex flex-col sm:flex-row gap-4">
+        <!-- Search Bar -->
+        <div class="relative flex-grow">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-mute pointer-events-none">
+            <Icon name="hugeicons:search-01" class="w-4 h-4" />
+          </span>
+          <input
+            id="search-input"
+            type="text"
+            placeholder="Search favorites..."
+            class="w-full h-12 pl-10 pr-4 bg-canvas border border-hairline rounded-sm text-sm text-ink focus:outline-none focus:border-hairline-strong transition-all placeholder:text-mute/50"
+            aria-label="Search favorites"
+          />
+        </div>
+
+        <!-- Category Dropdown (Populated dynamically in JS to match active favorites categories) -->
+        <Dropdown 
+          id="category-filter"
+          options={[{ key: '', label: 'All Categories' }]}
+          selected=""
+          class="w-full sm:w-[200px] shrink-0"
+        />
+      </div>
+
+      <!-- Bulk Action -->
+      <button
+        id="clear-all-btn"
+        class="h-12 px-5 border border-red-500/20 text-red-500 bg-red-500/5 hover:bg-red-500 hover:text-white hover:border-red-500 rounded-sm text-sm font-semibold transition-all shrink-0 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+        aria-label="Clear all favorites"
+      >
+        <Icon name="hugeicons:delete-02" class="w-4 h-4" />
+        Clear All Favorites
+      </button>
+    </div>
+
+    <!-- ── Favorites Grid/Container ─────────────────────────────────────────── -->
+    <div id="favorites-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Active favorites cards will be rendered here dynamically -->
+    </div>
+
+    <!-- ── Empty State ──────────────────────────────────────────────────────── -->
+    <div id="empty-state" class="hidden text-center py-16 sm:py-24 border border-dashed border-hairline rounded-md bg-canvas">
+      <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-canvas-soft-2 text-mute mb-5">
+        <!-- SVG Hollow Star -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+      </div>
+      <h2 class="text-lg font-semibold text-ink mb-2">No favorite measurements yet</h2>
+      <p class="text-sm text-body max-w-sm mx-auto mb-6 leading-relaxed">
+        Save important conversions to access them later.
+      </p>
+      <a
+        href="/"
+        class="inline-flex h-11 px-6 bg-primary hover:bg-primary/90 text-on-primary rounded-sm text-sm font-semibold transition-all items-center justify-center active:scale-95 font-sans"
+      >
+        Browse Converters
+      </a>
+    </div>
+
+  </div>
+
+  <!-- ── Confirmation Modal ────────────────────────────────────────────────── -->
+  <div
+    id="confirm-modal"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modal-title"
+  >
+    <div class="bg-canvas border border-hairline w-full max-w-md rounded-md shadow-2xl p-6 sm:p-8 transform scale-95 transition-transform duration-200">
+      <h3 id="modal-title" class="text-lg font-semibold text-ink mb-2">Clear All Favorites</h3>
+      <p class="text-sm text-body leading-relaxed mb-6">
+        Are you sure you want to remove all favorite measurements? This action cannot be undone.
+      </p>
+      <div class="flex justify-end gap-3">
+        <button
+          id="cancel-clear-btn"
+          class="h-10 px-4 border border-hairline rounded-sm text-sm text-ink hover:bg-canvas-soft-2 transition-all font-semibold active:scale-95 cursor-pointer font-sans"
+        >
+          Cancel
+        </button>
+        <button
+          id="confirm-clear-btn"
+          class="h-10 px-4 bg-red-500 hover:bg-red-600 text-white rounded-sm text-sm transition-all font-semibold active:scale-95 cursor-pointer font-sans"
+        >
+          Remove All
+        </button>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<!-- ─────────────────────────────────────────────────────────────────────────── -->
+<!-- Favorites Engine Client Script                                              -->
+<!-- ─────────────────────────────────────────────────────────────────────────── -->
+<script define:vars={{ serializedSlugMap }}>
+  // Import standard functions (Exposed globally by Dynamic [slug].astro or loaded directly here)
+  // Let's implement standard import/fetch logic in window fallback
+  const SLUG_MAP = JSON.parse(serializedSlugMap);
+
+  // Load utilities from localStorage
+  const STORAGE_KEY = 'realunitconverter_favorites';
+
+  function getFavorites() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveFavorites(items) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    } catch (e) {}
+  }
+
+  function deleteFavorite(id) {
+    const items = getFavorites();
+    const filtered = items.filter(item => item.id !== id);
+    saveFavorites(filtered);
+  }
+
+  function clearFavorites() {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (e) {}
+  }
+
+  // DOM Refs
+  const searchInput    = document.getElementById('search-input');
+  const categoryFilter  = document.getElementById('category-filter');
+  const controlsSection = document.getElementById('controls-section');
+  const clearAllBtn    = document.getElementById('clear-all-btn');
+  const favoritesGrid  = document.getElementById('favorites-grid');
+  const emptyState      = document.getElementById('empty-state');
+  
+  // Modal DOM Refs
+  const confirmModal   = document.getElementById('confirm-modal');
+  const cancelClearBtn = document.getElementById('cancel-clear-btn');
+  const confirmClearBtn = document.getElementById('confirm-clear-btn');
+
+  let currentFavorites = [];
+
+  // Helper to compute relative time
+  function getRelativeTime(timestamp) {
+    const diff = Date.now() - timestamp;
+    const oneMin = 60 * 1000;
+    const oneHour = 60 * oneMin;
+    const oneDay = 24 * oneHour;
+
+    if (diff < oneMin) {
+      return 'Just now';
+    } else if (diff < oneHour) {
+      const mins = Math.round(diff / oneMin);
+      return `Saved: ${mins} minute${mins > 1 ? 's' : ''} ago`;
+    } else if (diff < oneHour * 2) {
+      return `Saved: 1 hour ago`;
+    } else if (diff < oneDay) {
+      const hours = Math.round(diff / oneHour);
+      return `Saved: ${hours} hours ago`;
+    } else {
+      const days = Math.round(diff / oneDay);
+      if (days === 1) return 'Saved: Yesterday';
+      if (days < 7) return `Saved: ${days} days ago`;
+      return 'Saved: ' + new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(timestamp));
+    }
+  }
+
+  // Populate dynamic category choices
+  function updateFilterOptions(items) {
+    const categories = ['All Categories', ...new Set(items.map(i => i.converterType))];
+    const dropOptions = categories.map(cat => ({
+      key: cat === 'All Categories' ? '' : cat,
+      label: cat
+    }));
+
+    // Update Dropdown component values
+    if (categoryFilter) {
+      const listContainer = categoryFilter.querySelector('.dropdown-list');
+      const selectedLabel = categoryFilter.querySelector('.dropdown-selected-label');
+      
+      if (listContainer && selectedLabel) {
+        listContainer.innerHTML = dropOptions.map(opt => `
+          <button 
+            type="button" 
+            class="dropdown-item w-full text-left px-4 py-2 text-xs sm:text-sm text-body hover:bg-canvas-soft-2 hover:text-ink transition-colors cursor-pointer"
+            data-key="${opt.key}"
+          >
+            ${opt.label}
+          </button>
+        `).join('');
+
+        // Attach clicks
+        listContainer.querySelectorAll('.dropdown-item').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const key = btn.getAttribute('data-key') || '';
+            const label = btn.textContent.trim();
+            categoryFilter.setAttribute('data-value', key);
+            selectedLabel.textContent = label;
+            
+            // Close list
+            categoryFilter.classList.remove('active');
+            listContainer.classList.add('hidden');
+            
+            render();
+          });
+        });
+      }
+    }
+  }
+
+  // Render favorites cards
+  function render() {
+    const searchVal = searchInput.value.toLowerCase().trim();
+    const catVal    = categoryFilter.getAttribute('data-value') || '';
+
+    // Filter items
+    const filtered = currentFavorites.filter(item => {
+      const matchesCategory = !catVal || item.converterType === catVal;
+      
+      const searchString = `${item.converterType} ${item.fromUnit} ${item.toUnit} ${item.inputValue} ${item.outputValue}`.toLowerCase();
+      const matchesSearch = !searchVal || searchString.includes(searchVal);
+
+      return matchesCategory && matchesSearch;
+    });
+
+    if (currentFavorites.length === 0) {
+      controlsSection.classList.add('hidden');
+      favoritesGrid.innerHTML = '';
+      favoritesGrid.classList.add('hidden');
+      emptyState.classList.remove('hidden');
+      return;
+    }
+
+    controlsSection.classList.remove('hidden');
+    emptyState.classList.add('hidden');
+    favoritesGrid.classList.remove('hidden');
+
+    if (filtered.length === 0) {
+      favoritesGrid.innerHTML = `
+        <div class="col-span-full text-center py-10 border border-hairline rounded-md bg-canvas text-mute text-xs">
+          No matches found for your search criteria.
+        </div>
+      `;
+      return;
+    }
+
+    favoritesGrid.innerHTML = filtered.map(item => {
+      const cleanValueString = `${item.inputValue} ${item.fromUnit} = ${item.outputValue} ${item.toUnit}`;
+      const relativeTime = getRelativeTime(item.timestamp);
+      
+      // Resolve path parameters for reusing
+      const cleanType = item.converterType.toLowerCase().trim();
+      const categorySlug = SLUG_MAP[cleanType] || 'length';
+
+      return `
+        <div 
+          class="bg-canvas border border-hairline rounded-md p-4 sm:p-5 flex flex-col justify-between gap-4 shadow-[0_1px_1px_rgba(0,0,0,0.01)] hover:border-hairline-strong hover:bg-canvas-soft transition-all relative group"
+          data-id="${item.id}"
+        >
+          <!-- Whole Card absolute link for Reuse -->
+          <a
+            href="/unit-converters/${categorySlug}?val=${encodeURIComponent(item.inputValue)}&from=${encodeURIComponent(item.fromUnit)}&to=${encodeURIComponent(item.toUnit)}"
+            class="absolute inset-0 z-10 cursor-pointer"
+            aria-label="Reuse conversion"
+          ></a>
+
+          <div class="space-y-2 min-w-0 relative z-20 pointer-events-none">
+            <div class="flex items-center justify-between">
+              <!-- Category Tag -->
+              <span class="inline-block text-[9px] font-bold font-mono text-primary uppercase tracking-wider bg-primary/5 px-2 py-0.5 rounded-sm select-none">
+                ${item.converterType}
+              </span>
+              <!-- Save date -->
+              <span class="text-[10px] text-mute font-mono">${relativeTime}</span>
+            </div>
+            
+            <!-- Values -->
+            <div class="text-sm sm:text-base font-semibold text-ink leading-relaxed" title="${item.inputValue} ${item.fromUnit} → ${item.outputValue} ${item.toUnit}">
+              <span class="font-mono text-xs sm:text-sm font-medium text-mute">${item.inputValue}</span> ${item.fromUnit} 
+              <span class="text-mute px-0.5">&rarr;</span> 
+              <span class="font-mono text-xs sm:text-sm font-semibold text-ink">${item.outputValue}</span> ${item.toUnit}
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex items-center justify-between border-t border-hairline/50 pt-3 mt-1 relative z-20">
+            <!-- Reuse -->
+            <a
+              href="/unit-converters/${categorySlug}?val=${encodeURIComponent(item.inputValue)}&from=${encodeURIComponent(item.fromUnit)}&to=${encodeURIComponent(item.toUnit)}"
+              class="flex items-center gap-1 text-[11px] font-semibold text-link hover:underline active:scale-95 transition-all"
+              title="Open in converter"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><path d="M21 2v6h-6"/><path d="M21 13a9 9 0 1 1-3-7.7L21 8"/></svg>
+              <span>Reuse</span>
+            </a>
+
+            <!-- Copy & Delete -->
+            <div class="flex items-center gap-1">
+              <button
+                class="copy-btn p-1.5 text-mute hover:text-ink hover:bg-canvas-soft-2 rounded-sm transition-all focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer active:scale-90 flex items-center justify-center"
+                data-text="${cleanValueString}"
+                aria-label="Copy conversion"
+                title="Copy conversion"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+              </button>
+              <button
+                class="remove-btn p-1.5 text-mute hover:text-red-500 hover:bg-red-500/5 rounded-sm transition-all focus:outline-none focus:ring-1 focus:ring-red-500 cursor-pointer active:scale-90 flex items-center justify-center"
+                data-id="${item.id}"
+                aria-label="Delete favorite"
+                title="Delete favorite"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Attach copy actions
+    favoritesGrid.querySelectorAll('.copy-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const text = btn.getAttribute('data-text') || '';
+        if (text) {
+          navigator.clipboard.writeText(text).then(() => {
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-500"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+            setTimeout(() => { btn.innerHTML = originalHTML; }, 1500);
+          });
+        }
+      });
+    });
+
+    // Attach single remove actions
+    favoritesGrid.querySelectorAll('.remove-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id') || '';
+        if (id) {
+          deleteFavorite(id);
+          currentFavorites = getFavorites();
+          
+          // Animate card removal if preferred or simply re-render
+          const card = favoritesGrid.querySelector(`[data-id="${id}"]`);
+          if (card) {
+            card.classList.add('opacity-0', 'scale-95');
+            setTimeout(() => {
+              render();
+            }, 150);
+          } else {
+            render();
+          }
+        }
+      });
+    });
+  }
+
+  // Load and setup listeners
+  function init() {
+    currentFavorites = getFavorites();
+    updateFilterOptions(currentFavorites);
+    render();
+
+    // Live search input
+    searchInput.addEventListener('input', render);
+
+    // Clear all favorites with confirmation modal
+    clearAllBtn.addEventListener('click', () => {
+      confirmModal.classList.remove('hidden');
+      requestAnimationFrame(() => {
+        confirmModal.classList.add('opacity-0');
+        confirmModal.classList.remove('opacity-0');
+        confirmModal.querySelector('div').classList.add('scale-100');
+        confirmModal.querySelector('div').classList.remove('scale-95');
+      });
+    });
+
+    // Close modal actions
+    function closeModal() {
+      confirmModal.querySelector('div').classList.remove('scale-100');
+      confirmModal.querySelector('div').classList.add('scale-95');
+      confirmModal.classList.add('opacity-0');
+      setTimeout(() => {
+        confirmModal.classList.add('hidden');
+      }, 200);
+    }
+
+    cancelClearBtn.addEventListener('click', closeModal);
+    confirmModal.addEventListener('click', (e) => {
+      if (e.target === confirmModal) closeModal();
+    });
+
+    confirmClearBtn.addEventListener('click', () => {
+      clearFavorites();
+      closeModal();
+      currentFavorites = [];
+      render();
+    });
+  }
+
+  // Initial load
+  init();
+
+  // Handle view transitions
+  document.addEventListener('astro:after-swap', () => {
+    init();
+  });
+</script>

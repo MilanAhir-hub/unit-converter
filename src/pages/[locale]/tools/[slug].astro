@@ -1,0 +1,30 @@
+---
+export const prerender = false;
+Astro.response.headers.set('Cache-Control', 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800');
+
+import FractionTool from '../../tools/fraction.astro';
+import NumberBaseTool from '../../tools/number-base.astro';
+import NumberSystemTool from '../../tools/number-system.astro';
+import RatioTool from '../../tools/ratio.astro';
+import ScientificNotationTool from '../../tools/scientific-notation.astro';
+import UnitPrefixTool from '../../tools/unit-prefix.astro';
+
+const { slug } = Astro.params;
+
+const toolsMap: Record<string, any> = {
+  'fraction': FractionTool,
+  'number-base': NumberBaseTool,
+  'number-system': NumberSystemTool,
+  'ratio': RatioTool,
+  'scientific-notation': ScientificNotationTool,
+  'unit-prefix': UnitPrefixTool
+};
+
+const SelectedTool = toolsMap[slug || ''];
+
+if (!SelectedTool) {
+  return Astro.redirect('/404');
+}
+---
+
+<SelectedTool />

@@ -1,0 +1,180 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import { Icon } from 'astro-icon/components';
+import { t } from '../../utils/i18n';
+
+const locale = Astro.currentLocale || 'en';
+
+const getLocalizedHref = (url: string) => {
+  if (locale === 'en') return url;
+  if (url.startsWith(`/${locale}`)) return url;
+  return `/${locale}${url}`;
+};
+
+const blogDict: Record<string, Record<string, string>> = {
+  'meta_title': {
+    'en': 'Educational Guides & Measurement Resources',
+    'es': 'Guías Educativas y Recursos de Medición',
+    'hi': 'शैक्षिक गाइड और मापन संसाधन',
+    'fr': 'Guides Éducatifs & Ressources de Mesure',
+    'pt': 'Guias Educativos e Recursos de Medição',
+    'de': 'Bildungsleitfäden & Messressourcen',
+    'ar': 'الأدلة التعليمية وموارد القياس',
+    'ja': '学習ガイドと測定リソース'
+  },
+  'meta_desc': {
+    'en': 'Learn about the fascinating history, science, and technical calculations behind the measurement systems we use every day.',
+    'es': 'Aprenda sobre la fascinante historia, ciencia y cálculos técnicos detrás de los sistemas de medición que usamos todos los días.',
+    'hi': 'हमारे द्वारा प्रतिदिन उपयोग की जाने वाली मापन प्रणालियों के पीछे के आकर्षक इतिहास, विज्ञान और तकनीकी गणनाओं के बारे में जानें।',
+    'fr': "Découvrez l'histoire fascinante, la science et les calculs techniques qui se cachent derrière les systèmes de mesure que nous utilisons au quotidien.",
+    'pt': 'Aprenda sobre a história fascinante, ciência e cálculos técnicos por trás dos sistemas de medição que usamos todos os dias.',
+    'de': 'Erfahren Sie mehr über die faszinierende Geschichte, Wissenschaft und technischen Berechnungen hinter den Messsystemen, die wir täglich verwenden.',
+    'ar': 'تعرف على التاريخ الرائع والعلوم والحسابات الفنية وراء أنظمة القياس التي نستخدمها كل يوم.',
+    'ja': '私たちが毎日使用している測定システムの背後にある魅力的な歴史、科学、技術的な計算について学びましょう。'
+  },
+  'educational_center': {
+    'en': 'Educational Center', 'es': 'Centro Educativo', 'hi': 'शैक्षिक केंद्र', 'fr': 'Centre Éducatif', 'pt': 'Centro Educativo', 'de': 'Bildungszentrum', 'ar': 'المركز التعليمي', 'ja': '学習センター'
+  },
+  'hub_title': {
+    'en': 'Measurement & Conversion Hub', 'es': 'Centro de Medición y Conversión', 'hi': 'मापन और रूपांतरण हब', 'fr': 'Centre de Mesure et de Conversion', 'pt': 'Centro de Medição e Conversão', 'de': 'Mess- & Umrechnungszentrum', 'ar': 'مركز القياس والتحويل', 'ja': '測定・変換ハブ'
+  },
+  'hub_desc': {
+    'en': 'Explore high-quality guides, formulas, and deep dives into the units that power science, engineering, and daily life.',
+    'es': 'Explore guías de alta calidad, fórmulas y análisis profundos de las unidades que impulsan la ciencia, la ingeniería y la vida diaria.',
+    'hi': 'विज्ञान, इंजीनियरिंग और दैनिक जीवन को शक्ति प्रदान करने वाली इकाइयों के बारे में उच्च गुणवत्ता वाले गाइड, सूत्र और गहन जानकारी का अन्वेषण करें।',
+    'fr': "Explorez des guides de haute qualité, des formules et des analyses approfondies des unités qui alimentent la science, l'ingénierie et la vie quotidienne.",
+    'pt': 'Explore guias de alta qualidade, fórmulas e análises profundas sobre as unidades que alimentam a ciência, engenharia e a vida cotidiana.',
+    'de': 'Entdecken Sie hochwertige Leitfäden, Formeln und vertiefte Einblicke in die Einheiten, die Wissenschaft, Technik und Alltag prägen.',
+    'ar': 'استكشف الأدلة والصيغ عالية الجودة والتعمق في الوحدات التي تشغل العلوم والهندسة والحياة اليومية.',
+    'ja': '科学、エンジニアリング、そして日常生活を支える単位に関する高品質なガイド、公式、そして深い洞察をご覧ください。'
+  },
+  'all_articles': {
+    'en': 'All Articles', 'es': 'Todos los Artículos', 'hi': 'सभी लेख', 'fr': 'Tous les Articles', 'pt': 'Todos os Artigos', 'de': 'Alle Artikel', 'ar': 'جميع المقالات', 'ja': 'すべての記事'
+  },
+  'featured_guides': {
+    'en': 'Featured Guides', 'es': 'Guías Destacadas', 'hi': 'विशेष गाइड', 'fr': 'Guides En Vedette', 'pt': 'Guias em Destaque', 'de': 'Empfohlene Leitfäden', 'ar': 'أدلة مميزة', 'ja': '注目のガイド'
+  },
+  'all_resources': {
+    'en': 'All Resources', 'es': 'Todos los Recursos', 'hi': 'सभी संसाधन', 'fr': 'Toutes les Ressources', 'pt': 'Todos os Recursos', 'de': 'Alle Ressourcen', 'ar': 'جميع الموارد', 'ja': 'すべてのリソース'
+  },
+  'read_article': {
+    'en': 'Read Article', 'es': 'Leer Artículo', 'hi': 'लेख पढ़ें', 'fr': "Lire l'Article", 'pt': 'Ler Artigo', 'de': 'Artikel lesen', 'ar': 'اقرأ المقال', 'ja': '記事を読む'
+  }
+};
+
+const getBlogString = (key: string): string => {
+  return blogDict[key]?.[locale] || blogDict[key]?.['en'] || key;
+};
+
+const pageTitle = getBlogString('meta_title');
+const pageDescription = getBlogString('meta_desc');
+
+const blogEntries = (await getCollection('blog'))
+  .filter(entry => !entry.data.draft)
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
+const featuredArticles = blogEntries.filter(entry => entry.data.featured);
+const regularArticles = blogEntries.filter(entry => !entry.data.featured);
+
+const categories = [...new Set(blogEntries.map(entry => entry.data.category))].sort();
+---
+
+<Layout title={`${pageTitle} — Real Unit Converter`} description={pageDescription}>
+  <div class="max-w-6xl mx-auto py-8 sm:py-12 md:py-16 px-4">
+    
+    <!-- Header -->
+    <header class="mb-12 sm:mb-16 text-center">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-canvas-soft-2 text-[10px] sm:text-[11px] font-mono text-mute uppercase tracking-widest mb-4">
+        {getBlogString('educational_center')}
+      </div>
+      <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold tracking-[-0.04em] text-ink mb-6 leading-tight">
+        {getBlogString('hub_title')}
+      </h1>
+      <p class="text-body max-w-2xl mx-auto leading-relaxed text-sm sm:text-base">
+        {getBlogString('hub_desc')}
+      </p>
+    </header>
+
+    <!-- Category Filter (Optional for future expansion) -->
+    <nav class="flex items-center gap-2 mb-10 overflow-x-auto no-scrollbar pb-2">
+      <a href={getLocalizedHref("/blog")} class="px-4 py-2 rounded-full bg-primary text-white text-xs font-semibold whitespace-nowrap">
+        {getBlogString('all_articles')}
+      </a>
+      {categories.map((category) => (
+        <a 
+          href={getLocalizedHref(`/blog/category/${category.toLowerCase().replace(/\s+/g, '-')}`)}
+          class="px-4 py-2 rounded-full bg-canvas border border-hairline hover:border-primary/50 text-mute hover:text-primary text-xs font-medium transition-all whitespace-nowrap"
+        >
+          {category}
+        </a>
+      ))}
+    </nav>
+
+    <!-- Featured Section -->
+    {featuredArticles.length > 0 && (
+      <section class="mb-16">
+        <h2 class="text-sm font-mono text-mute uppercase tracking-widest mb-8 flex items-center gap-2">
+          <Icon name="hugeicons:star" class="w-4 h-4 text-amber-500" />
+          {getBlogString('featured_guides')}
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+          {featuredArticles.map((article) => (
+            <a href={getLocalizedHref(`/blog/${article.id}`)} class="group relative flex flex-col bg-canvas border border-hairline rounded-xl overflow-hidden hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300">
+              <div class="p-8 sm:p-10">
+                <div class="flex items-center justify-between text-[11px] font-mono text-mute uppercase tracking-wider mb-6">
+                  <span class="text-primary font-bold">{article.data.category}</span>
+                  <span>{article.data.readTime}</span>
+                </div>
+                <h3 class="text-xl sm:text-2xl md:text-3xl font-bold text-ink mb-4 group-hover:text-primary transition-colors leading-tight">
+                  {article.data.title}
+                </h3>
+                <p class="text-body text-sm sm:text-base leading-relaxed mb-8 line-clamp-3">
+                  {article.data.description}
+                </p>
+                <div class="flex items-center gap-2 text-xs font-bold text-primary group-hover:underline">
+                  {t('blog_read_guide', locale)}
+                  <Icon name="hugeicons:arrow-right-01" class="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- Regular Articles List -->
+    <section>
+      <h2 class="text-sm font-mono text-mute uppercase tracking-widest mb-8 flex items-center gap-2">
+        <Icon name="hugeicons:task-01" class="w-4 h-4 text-primary" />
+        {getBlogString('all_resources')}
+      </h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+        {regularArticles.map((article) => (
+          <article class="flex flex-col bg-canvas border border-hairline rounded-xl overflow-hidden hover:border-hairline-strong transition-all duration-200 group">
+            <div class="p-6 sm:p-8 flex flex-col flex-grow">
+              <div class="flex items-center justify-between text-[10px] font-mono text-mute uppercase tracking-wider mb-4">
+                <span>{article.data.category}</span>
+                <span>{article.data.readTime}</span>
+              </div>
+              <h3 class="text-lg font-bold text-ink mb-3 group-hover:text-primary transition-colors leading-snug">
+                {article.data.title}
+              </h3>
+              <p class="text-body text-xs sm:text-sm leading-relaxed mb-6 flex-grow line-clamp-3">
+                {article.data.description}
+              </p>
+              <a 
+                href={getLocalizedHref(`/blog/${article.id}`)}
+                class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-primary hover:underline mt-auto self-start py-3 px-4 sm:py-1.5 sm:px-2.5 min-h-[44px] sm:min-h-0"
+              >
+                {getBlogString('read_article')}
+                <Icon name="hugeicons:arrow-right-01" class="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+              </a>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+
+  </div>
+</Layout>

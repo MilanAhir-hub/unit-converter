@@ -1,0 +1,918 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { Icon } from 'astro-icon/components';
+import {
+  fetchHistoricalRates,
+  calculateCrossRateSeries,
+  calculate24hChange,
+  generateSparkline
+} from '../../utils/currencyApi';
+
+export async function getStaticPaths() {
+  const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'INR', 'CAD', 'AUD', 'CHF', 'CNY'];
+  const paths = [];
+
+  // Fetch once at build time
+  const historicalRates = await fetchHistoricalRates();
+  const sortedDates = Object.keys(historicalRates).sort();
+  const latestDate = sortedDates[sortedDates.length - 1] || new Date().toISOString().split('T')[0];
+
+  for (const from of currencies) {
+    for (const to of currencies) {
+      if (from === to) continue;
+      
+      const slug = `${from.toLowerCase()}-to-${to.toLowerCase()}`;
+      const rateSeries = calculateCrossRateSeries(historicalRates, from, to);
+      const change = calculate24hChange(rateSeries);
+      const sparkline = generateSparkline(rateSeries);
+      const currentValue = rateSeries[rateSeries.length - 1];
+
+      paths.push({
+        params: { slug },
+        props: {
+          from,
+          to,
+          rateSeries,
+          change,
+          sparkline,
+          currentValue,
+          latestDate
+        }
+      });
+    }
+  }
+
+  return paths;
+}
+
+const { slug } = Astro.params;
+let {
+  from,
+  to,
+  rateSeries,
+  change,
+  sparkline,
+  currentValue,
+  latestDate
+} = Astro.props;
+
+if (!from || !to) {
+  if (slug) {
+    const match = slug.match(/^([a-z]{3})-to-([a-z]{3})$/i);
+    if (match) {
+      from = match[1].toUpperCase();
+      to = match[2].toUpperCase();
+      
+      const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'INR', 'CAD', 'AUD', 'CHF', 'CNY'];
+      if (!currencies.includes(from) || !currencies.includes(to)) {
+        return Astro.redirect('/404');
+      }
+
+      try {
+        const historicalRates = await fetchHistoricalRates();
+        const sortedDates = Object.keys(historicalRates).sort();
+        latestDate = sortedDates[sortedDates.length - 1] || new Date().toISOString().split('T')[0];
+        rateSeries = calculateCrossRateSeries(historicalRates, from, to);
+        change = calculate24hChange(rateSeries);
+        sparkline = generateSparkline(rateSeries);
+        currentValue = rateSeries[rateSeries.length - 1];
+      } catch (err) {
+        console.error('SSR Currency calculation failed:', err);
+        return Astro.redirect('/404');
+      }
+    } else {
+      return Astro.redirect('/404');
+    }
+  } else {
+    return Astro.redirect('/404');
+  }
+}
+
+if (!from || !to || !rateSeries || currentValue === undefined) {
+  return Astro.redirect('/404');
+}
+
+const currencyNames: Record<string, string> = {
+  USD: 'US Dollar',
+  EUR: 'Euro',
+  GBP: 'British Pound',
+  JPY: 'Japanese Yen',
+  INR: 'Indian Rupee',
+  CAD: 'Canadian Dollar',
+  AUD: 'Australian Dollar',
+  CHF: 'Swiss Franc',
+  CNY: 'Chinese Yuan'
+};
+
+const currencySymbols: Record<string, string> = {
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  JPY: '¥',
+  INR: '₹',
+  CAD: 'C$',
+  AUD: 'A$',
+  CHF: 'Fr',
+  CNY: '¥'
+};
+
+import { t, translateCategory, translateUnit } from '../../utils/i18n';
+const locale = Astro.currentLocale || 'en';
+
+const getLocalizedHref = (url: string) => {
+  if (locale === 'en') return url;
+  if (url.startsWith(`/${locale}`)) return url;
+  return `/${locale}${url}`;
+};
+
+const localizedFromName = translateUnit(from.toLowerCase(), locale, currencyNames[from] || from);
+const localizedToName = translateUnit(to.toLowerCase(), locale, currencyNames[to] || to);
+
+const fromName = localizedFromName;
+const toName = localizedToName;
+const fromSymbol = currencySymbols[from] || '';
+const toSymbol = currencySymbols[to] || '';
+
+const getLocalizedCurrencyStrings = (f: string, t: string, fName: string, tName: string, loc: string) => {
+  const templates: Record<string, Record<string, string>> = {
+    'en': {
+      headerDesc: `Check live mid-market ${f} to ${t} rates, historical 7-day sparkline charts, and convert arbitrary amounts using our real-time calculator below.`,
+      liveExchangeRate: "Live Exchange Rate",
+      midMarketDesc: "Mid-market rate at standard financial hubs. Local bank transfers and exchange shops may add a fee margin.",
+      quickCalculator: "Quick Conversion Calculator",
+      amount: "Amount",
+      convertedResult: "Converted Result",
+      sevenDayTrajectory: "7-Day Rate Trajectory",
+      sevenDaysAgo: "7 Days Ago",
+      today: "Today",
+      ratesLastUpdated: "Rates Last Updated:",
+      fullDashboard: "Full Dashboard",
+      faqTitle: "Frequently Asked Questions (FAQs)",
+      relatedConversions: "Related Conversions",
+      fullCurrencyTool: "Full Currency Tool",
+      fullCurrencyToolDesc: "Want to convert other world currencies? Visit our main Currency Dashboard to view live rates, graphs, and conversions for dozens of additional currency pairs.",
+      openCurrencyDashboard: "Open Currency Dashboard",
+      pageTitle: `${f} to ${t} Converter | 1 ${f} = ${currentValue.toFixed(4)} ${t} Live Rate`,
+      pageDescription: `Convert ${fName} to ${tName} (${f} to ${t}) instantly with live exchange rates. View the 7-day trend chart, 24h percentage changes, calculations, and FAQs.`
+    },
+    'es': {
+      headerDesc: `Consulte las tasas en tiempo real de ${f} a ${t}, los gráficos de tendencia de 7 días y convierta montos con nuestra calculadora en tiempo real a continuación.`,
+      liveExchangeRate: "Tipo de Cambio en Vivo",
+      midMarketDesc: "Tasa de mercado medio en hubs financieros estándar. Las transferencias bancarias locales y casas de cambio pueden agregar un margen de comisión.",
+      quickCalculator: "Calculadora de Conversión Rápida",
+      amount: "Cantidad",
+      convertedResult: "Resultado Convertido",
+      sevenDayTrajectory: "Trayectoria de Tasa de 7 Días",
+      sevenDaysAgo: "Hace 7 Días",
+      today: "Hoy",
+      ratesLastUpdated: "Última Actualización de Tasas:",
+      fullDashboard: "Panel Completo",
+      faqTitle: "Preguntas Frecuentes (FAQs)",
+      relatedConversions: "Conversiones Relacionadas",
+      fullCurrencyTool: "Herramienta de Divisas Completa",
+      fullCurrencyToolDesc: "¿Quiere convertir otras monedas del mundo? Visite nuestro Panel de Divisas principal para ver tasas en vivo, gráficos y conversiones para docenas de pares de divisas adicionales.",
+      openCurrencyDashboard: "Abrir Panel de Divisas",
+      pageTitle: `Conversor de ${f} a ${t} | 1 ${f} = ${currentValue.toFixed(4)} ${t} Tasa en Vivo`,
+      pageDescription: `Convierta ${fName} a ${tName} (${f} a ${t}) al instante con tasas de cambio en vivo. Vea el gráfico de tendencia de 7 días, cambios de 24h y preguntas frecuentes.`
+    },
+    'hi': {
+      headerDesc: `नीचे दिए गए हमारे रीयल-टाइम कैलकुलेटर का उपयोग करके लाइव मिड-मार्केट ${f} से ${t} दरें, ऐतिहासिक 7-दिवसीय स्पार्कलाइन चार्ट देखें और मनमानी राशि को परिवर्तित करें।`,
+      liveExchangeRate: "लाइव विनिमय दर",
+      midMarketDesc: "मानक वित्तीय केंद्रों पर मध्य-बाजार दर। स्थानीय बैंक हस्तांतरण और विनिमय दुकानें शुल्क मार्जिन जोड़ सकती हैं।",
+      quickCalculator: "त्वरित रूपांतरण कैलकुलेटर",
+      amount: "मात्रा",
+      convertedResult: "परिवर्तित परिणाम",
+      sevenDayTrajectory: "7-दिवसीय दर प्रक्षेपवक्र",
+      sevenDaysAgo: "7 दिन पहले",
+      today: "आज",
+      ratesLastUpdated: "दरें अंतिम बार अपडेट की गईं:",
+      fullDashboard: "पूर्ण डैशबोर्ड",
+      faqTitle: "अक्सर पूछे जाने वाले प्रश्न (FAQs)",
+      relatedConversions: "संबंधित रूपांतरण",
+      fullCurrencyTool: "पूर्ण मुद्रा उपकरण",
+      fullCurrencyToolDesc: "अन्य विश्व मुद्राओं को बदलना चाहते हैं? दर्जनों अतिरिक्त मुद्रा जोड़ों के लिए लाइव दरें, ग्राफ़ और रूपांतरण देखने के लिए हमारे मुख्य मुद्रा डैशबोर्ड पर जाएं।",
+      openCurrencyDashboard: "मुद्रा डैशबोर्ड खोलें",
+      pageTitle: `${f} से ${t} कनवर्टर | 1 ${f} = ${currentValue.toFixed(4)} ${t} लाइव दर`,
+      pageDescription: `लाइव विनिमय दरों के साथ तुरंत ${fName} को ${tName} (${f} से ${t}) में परिवर्तित करें। 7-दिवसीय रुझान चार्ट, 24 घंटे का प्रतिशत परिवर्तन और अक्सर पूछे जाने वाले प्रश्न देखें।`
+    },
+    'fr': {
+      headerDesc: `Consultez les taux de change ${f} contre ${t} du marché moyen en direct, les graphiques sur 7 jours et convertissez des montants à l'aide de notre calculateur en temps réel ci-dessous.`,
+      liveExchangeRate: "Taux de Change en Direct",
+      midMarketDesc: "Taux moyen du marché dans les centres financiers standard. Les banques de détail et les bureaux de change peuvent appliquer une marge sur les frais.",
+      quickCalculator: "Calculateur de Conversion Rapide",
+      amount: "Montant",
+      convertedResult: "Résultat Converti",
+      sevenDayTrajectory: "Trajectoire des Taux sur 7 Jours",
+      sevenDaysAgo: "Il y a 7 Jours",
+      today: "Aujourd'hui",
+      ratesLastUpdated: "Dernière Mise à Jour des Taux :",
+      fullDashboard: "Tableau de Bord Complet",
+      faqTitle: "Foire Aux Questions (FAQs)",
+      relatedConversions: "Conversions Associées",
+      fullCurrencyTool: "Outil de Devises Complet",
+      fullCurrencyToolDesc: "Vous souhaitez convertir d'autres devises mondiales ? Visitez notre tableau de bord principal des devises pour voir les taux en direct, les graphiques et les conversions pour des dizaines de paires de devises supplémentaires.",
+      openCurrencyDashboard: "Ouvrir le Tableau de Bord des Devises",
+      pageTitle: `Convertisseur ${f} en ${t} | 1 ${f} = ${currentValue.toFixed(4)} ${t} Taux en Direct`,
+      pageDescription: `Convertissez instantanément le ${fName} en ${tName} (${f} contre ${t}) avec les taux de change en direct. Affichez le graphique de tendance sur 7 jours, les variations sur 24h et la FAQ.`
+    },
+    'pt': {
+      headerDesc: `Consulte as taxas de câmbio de ${f} para ${t} em tempo real, os gráficos de tendência de 7 dias e converta valores usando nossa calculadora em tempo real abaixo.`,
+      liveExchangeRate: "Taxa de Câmbio em Tempo Real",
+      midMarketDesc: "Taxa de mercado médio em centros financeiros padrão. Bancos tradicionais e casas de câmbio podem adicionar uma margem de comissão.",
+      quickCalculator: "Calculadora de Conversão Rápida",
+      amount: "Quantidade",
+      convertedResult: "Resultado Convertido",
+      sevenDayTrajectory: "Trajetória da Taxa de 7 Dias",
+      sevenDaysAgo: "7 Dias Atrás",
+      today: "Hoje",
+      ratesLastUpdated: "Última Atualização das Taxas:",
+      fullDashboard: "Painel Completo",
+      faqTitle: "Perguntas Frequentes (FAQs)",
+      relatedConversions: "Conversões Relacionadas",
+      fullCurrencyTool: "Ferramenta de Câmbio Completa",
+      fullCurrencyToolDesc: "Quer converter outras moedas do mundo? Visite o nosso Painel de Moedas principal para ver taxas em tempo real, gráficos e conversões para dezenas de pares de moedas adicionais.",
+      openCurrencyDashboard: "Abrir Painel de Moedas",
+      pageTitle: `Conversor de ${f} para ${t} | 1 ${f} = ${currentValue.toFixed(4)} ${t} Taxa em Tempo Real`,
+      pageDescription: `Converta ${fName} para ${tName} (${f} para ${t}) instantaneamente com taxas de câmbio em tempo real. Veja o gráfico de tendência de 7 dias, alterações de 24h e perguntas frequentes.`
+    },
+    'de': {
+      headerDesc: `Prüfen Sie Live-Mittelkursraten von ${f} zu ${t}, historische 7-Tage-Trenddiagramme und rechnen Sie Beträge mit unserem Echtzeit-Rechner unten um.`,
+      liveExchangeRate: "Live-Wechselkurs",
+      midMarketDesc: "Devisenmittelkurs an Standardfinanzplätzen. Lokale Banken und Wechselstuben erheben ggf. einen Aufschlag.",
+      quickCalculator: "Schnellrechner",
+      amount: "Betrag",
+      convertedResult: "Umgerechnetes Ergebnis",
+      sevenDayTrajectory: "7-Tage-Kursverlauf",
+      sevenDaysAgo: "Vor 7 Tagen",
+      today: "Heute",
+      ratesLastUpdated: "Kurse zuletzt aktualisiert:",
+      fullDashboard: "Komplettes Dashboard",
+      faqTitle: "Häufig gestellte Fragen (FAQs)",
+      relatedConversions: "Ähnliche Umrechnungen",
+      fullCurrencyTool: "Vollständiges Währungstool",
+      fullCurrencyToolDesc: "Möchten Sie andere Weltwährungen umrechnen? Besuchen Sie unser Hauptwährungs-Dashboard, um Live-Kurse, Diagramme und Umrechnungen für Dutzende weiterer Währungspaare anzuzeigen.",
+      openCurrencyDashboard: "Währungs-Dashboard öffnen",
+      pageTitle: `${f} zu ${t} Umrechner | 1 ${f} = ${currentValue.toFixed(4)} ${t} Live-Kurs`,
+      pageDescription: `Rechnen Sie ${fName} in ${tName} (${f} in ${t}) sofort mit Live-Wechselkursen um. Sehen Sie sich das 7-Tage-Trenddiagramm, 24-Stunden-Änderungen und FAQs an.`
+    },
+    'ar': {
+      headerDesc: `تحقّق من أسعار الصرف الحية لـ ${f} مقابل ${t} في السوق المتوسطة، ومخططات الاتجاه التاريخية لمدة 7 أيام، وقم بتحويل المبالغ باستخدام حاسبتنا في الوقت الفعلي أدناه.`,
+      liveExchangeRate: "سعر الصرف المباشر",
+      midMarketDesc: "سعر السوق المتوسطة في المراكز المالية القياسية. قد تضيف البنوك المحلية ومحلات الصرافة هامش رسوم.",
+      quickCalculator: "حاسبة التحويل السريع",
+      amount: "المبلغ",
+      convertedResult: "النتيجة المحولة",
+      sevenDayTrajectory: "مسار السعر على مدار 7 أيام",
+      sevenDaysAgo: "منذ 7 أيام",
+      today: "اليوم",
+      ratesLastUpdated: "آخر تحديث للأسعار:",
+      fullDashboard: "لوحة التحكم الكاملة",
+      faqTitle: "الأسئلة الشائعة",
+      relatedConversions: "تحويلات ذات صلة",
+      fullCurrencyTool: "أداة العملات الكاملة",
+      fullCurrencyToolDesc: "هل تريد تحويل عملات عالمية أخرى؟ تفضل بزيارة لوحة التحكم الرئيسية للعملات لعرض الأسعار المباشرة والمخططات والتحويلات لعشرات من أزواج العملات الإضافية.",
+      openCurrencyDashboard: "افتح لوحة تحكم العملات",
+      pageTitle: `محول ${f} إلى ${t} | 1 ${f} = ${currentValue.toFixed(4)} ${t} سعر الصرف المباشر`,
+      pageDescription: `قم بتحويل ${fName} إلى ${tName} (${f} مقابل ${t}) على الفور بأسعار الصرف الحية. عرض مخطط الاتجاه لمدة 7 أيام، والتغيرات على مدار 24 ساعة، والأسئلة الشائعة.`
+    },
+    'ja': {
+      headerDesc: `リアルタイムの${f}から${t}の中間市場レート、過去7日間のスパークラインチャートを確認し、以下の電卓を使用して任意の金額を変換します。`,
+      liveExchangeRate: "リアルタイム為替レート",
+      midMarketDesc: "主要な金融ハブにおける中間市場レート。地方銀行や両替所では、手数料が加算される場合があります。",
+      quickCalculator: "簡易変換電卓",
+      amount: "金額",
+      convertedResult: "変換結果",
+      sevenDayTrajectory: "7日間のレート推移",
+      sevenDaysAgo: "7日前",
+      today: "今日",
+      ratesLastUpdated: "レート最終更新：",
+      fullDashboard: "ダッシュボード",
+      faqTitle: "よくある質問（FAQ）",
+      relatedConversions: "関連する変換",
+      fullCurrencyTool: "総合通貨ツール",
+      fullCurrencyToolDesc: "他の世界通貨を換算しますか？主要な通貨ダッシュボードにアクセスして、多数の追加通貨ペアのライブレート、グラフ、および変換を表示します。",
+      openCurrencyDashboard: "通貨ダッシュボードを開く",
+      pageTitle: `${f}から${t}への為替レート換算 | 1 ${f} = ${currentValue.toFixed(4)} ${t} リアルタイムレート`,
+      pageDescription: `リアルタイムの為替レートで${fName}から${tName}（${f}から${t}）へ即座に換算します。7日間のトレンドチャート、24時間の変動率、よくある質問を表示します。`
+    }
+  };
+  return templates[loc] || templates['en'];
+};
+const curStrings = getLocalizedCurrencyStrings(from, to, fromName, toName, locale);
+
+const pageTitle = curStrings.pageTitle;
+const pageDescription = curStrings.pageDescription;
+
+const canonicalUrl = `https://realunitconverter.com/currency/${slug}`;
+
+// Dynamic Schemas
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": t('nav_home', locale),
+      "item": "https://realunitconverter.com/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": translateCategory('currency', locale),
+      "item": "https://realunitconverter.com/unit-converters/currency"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": `${from} to ${to} Exchange Rate`,
+      "item": canonicalUrl
+    }
+  ]
+};
+
+const getLocalizedCurrencyFaq = (f: string, t: string, fName: string, tName: string, loc: string) => {
+  const templates: Record<string, Array<{ q: string; a: string }>> = {
+    'en': [
+      {
+        q: `Why does the ${f} to ${t} exchange rate change daily?`,
+        a: `Exchange rates fluctuate 24/7 due to global market demand, interest rate decisions by central banks, inflation data, geopolitical events, and general economic stability in both regions.`
+      },
+      {
+        q: `How do I convert ${f} to ${t} manually?`,
+        a: `To convert manually, simply multiply your value in ${f} by the current exchange rate multiplier (${currentValue.toFixed(4)}). For example, to convert 100 ${f}, calculate: 100 × ${currentValue.toFixed(4)} = ${(100 * currentValue).toFixed(2)} ${t}.`
+      },
+      {
+        q: `Where can I get the best transactional exchange rate?`,
+        a: `Traditional retail banks usually offer less favorable rates because they add a markup of 2-5% on top of the mid-market exchange rate. To get rates closest to the mid-market price, look for dedicated digital money transfer services or multi-currency account providers.`
+      }
+    ],
+    'es': [
+      {
+        q: `¿Por qué cambia diariamente el tipo de cambio de ${f} a ${t}?`,
+        a: `Los tipos de cambio fluctúan las 24 horas, los 7 días de la semana debido a la demanda del mercado global, las decisiones de tasas de interés de los bancos centrales, los datos de inflación, los eventos geopolíticos y la estabilidad económica general en ambas regiones.`
+      },
+      {
+        q: `¿Cómo convierto ${f} a ${t} manualmente?`,
+        a: `Para convertir manualmente, simplemente multiplique su valor en ${f} por el multiplicador de tipo de cambio actual (${currentValue.toFixed(4)}). Por ejemplo, para convertir 100 ${f}, calcule: 100 × ${currentValue.toFixed(4)} = ${(100 * currentValue).toFixed(2)} ${t}.`
+      },
+      {
+        q: `¿Dónde puedo obtener el mejor tipo de cambio de transacción?`,
+        a: `Los bancos minoristas tradicionales suelen ofrecer tasas menos favorables porque añaden un margen del 2 al 5% sobre el tipo de cambio del mercado medio. Para obtener tasas más cercanas al precio del mercado medio, busque servicios dedicados de transferencia de dinero digital o proveedores de cuentas multidivisa.`
+      }
+    ],
+    'hi': [
+      {
+        q: `${f} से ${t} विनिमय दर प्रतिदिन क्यों बदलती है?`,
+        a: `वैश्विक बाजार की मांग, केंद्रीय बैंकों द्वारा ब्याज दर के निर्णय, मुद्रास्फीति के आंकड़े, भू-राजनीतिक घटनाओं और दोनों क्षेत्रों में सामान्य आर्थिक स्थिरता के कारण विनिमय दरें २४/७ उतार-चढ़ाव करती हैं।`
+      },
+      {
+        q: `मैं ${f} से ${t} में मैन्युअल रूप से कैसे परिवर्तित करूँ?`,
+        a: `मैन्युअल रूप से बदलने के लिए, बस ${f} में अपने मान को वर्तमान विनिमय दर गुणक (${currentValue.toFixed(4)}) से गुणा करें। उदाहरण के लिए, 100 ${f} को बदलने के लिए, गणना करें: 100 × ${currentValue.toFixed(4)} = ${(100 * currentValue).toFixed(2)} ${t}।`
+      },
+      {
+        q: `मुझे सबसे अच्छा लेनदेन विनिमय दर कहां मिल सकता है?`,
+        a: `पारंपरिक खुदरा बैंक आमतौर पर कम अनुकूल दरों की पेशकश करते हैं क्योंकि वे मध्य-बाजार विनिमय दर के शीर्ष पर 2-5% का मार्कअप जोड़ते हैं। मध्य-बाजार मूल्य के सबसे करीब दरें प्राप्त करने के लिए, समर्पित डिजिटल मनी ट्रांसफर सेवाओं या बहु-मुद्रा खाता प्रदाताओं की तलाश करें।`
+      }
+    ],
+    'fr': [
+      {
+        q: `Pourquoi le taux de change ${f} contre ${t} varie-t-il quotidiennement ?`,
+        a: `Les taux de change fluctuent 24h/24 et 7j/7 en raison de la demande du marché mondial, des décisions des banques centrales sur les taux d'intérêt, des données sur l'inflation, des événements géopolitiques et de la stabilité économique générale dans les deux régions.`
+      },
+      {
+        q: `Comment convertir ${f} en ${t} manuellement ?`,
+        a: `Pour convertir manuellement, multipliez simplement votre valeur en ${f} par le multiplicateur de taux de change actuel (${currentValue.toFixed(4)}). Par exemple, pour convertir 100 ${f}, calculez : 100 × ${currentValue.toFixed(4)} = ${(100 * currentValue).toFixed(2)} ${t}.`
+      },
+      {
+        q: `Où puis-je obtenir le meilleur taux de change ?`,
+        a: `Les banques de détail traditionnelles proposent généralement des taux moins avantageux car elles ajoutent une marge de 2 à 5 % en plus du taux de change moyen du marché. Pour obtenir des taux plus proches du prix du marché, recherchez des services de transfert d'argent en ligne dédiés ou des fournisseurs de comptes multi-devises.`
+      }
+    ],
+    'pt': [
+      {
+        q: `Por que a taxa de câmbio de ${f} para ${t} muda diariamente?`,
+        a: `As taxas de câmbio flutuam 24 horas por dia, 7 dias por semana, devido à demanda do mercado global, decisões de taxas de juros dos bancos centrais, dados de inflação, eventos geopolíticos e estabilidade econômica geral em ambas as regiões.`
+      },
+      {
+        q: `Como converter ${f} para ${t} manualmente?`,
+        a: `Para converter manualmente, basta multiplicar o seu valor em ${f} pelo multiplicador da taxa de câmbio atual (${currentValue.toFixed(4)}). Por exemplo, para converter 100 ${f}, calcule: 100 × ${currentValue.toFixed(4)} = ${(100 * currentValue).toFixed(2)} ${t}.`
+      },
+      {
+        q: `Onde posso obter a melhor taxa de câmbio de transação?`,
+        a: `Os bancos de retalho tradicionais costumam oferecer taxas menos favoráveis porque adicionam uma margem de 2-5% sobre a taxa de câmbio de mercado médio. Para obter taxas mais próximas do preço de mercado médio, procure serviços dedicados de transferência de dinheiro digital ou provedores de contas multimoedas.`
+      }
+    ],
+    'de': [
+      {
+        q: `Warum ändert sich der Wechselkurs von ${f} zu ${t} täglich?`,
+        a: `Wechselkurse schwanken rund um die Uhr aufgrund der weltweiten Marktnachfrage, Zinsentscheidungen der Zentralbanken, Inflationsdaten, geopolitischen Ereignissen und der allgemeinen wirtschaftlichen Stabilität in beiden Regionen.`
+      },
+      {
+        q: `Wie rechne ich ${f} manuell in ${t} um?`,
+        a: `Um manuell umzurechnen, multiplizieren Sie einfach Ihren Wert in ${f} mit dem aktuellen Wechselkursmultiplikator (${currentValue.toFixed(4)}). Um beispielsweise 100 ${f} umzurechnen, rechnen Sie: 100 × ${currentValue.toFixed(4)} = ${(100 * currentValue).toFixed(2)} ${t}.`
+      },
+      {
+        q: `Wo erhalte ich den besten Transaktionswechselkurs?`,
+        a: `Traditionelle Filialbanken bieten in der Regel ungünstigere Kurse an, da sie einen Aufschlag von 2–5 % auf den Devisenmittelkurs erheben. Um Kurse zu erhalten, die so nah wie möglich am Devisenmittelkurs liegen, suchen Sie nach spezialisierten digitalen Geldtransferdiensten oder Anbietern von Mehrwährungskonten.`
+      }
+    ],
+    'ar': [
+      {
+        q: `لماذا يتغير سعر صرف ${f} مقابل ${t} يوميًا؟`,
+        a: `تتقلب أسعار الصرف على مدار الساعة طوال أيام الأسبوع بسبب طلب السوق العالمي، وقرارات أسعار الفائدة الصادرة عن البنوك المركزية، وبيانات التضخم، والأحداث الجيوسياسية، والاستقرار الاقتصادي العام في كلا المنطقتين.`
+      },
+      {
+        q: `كيف يمكنني تحويل ${f} إلى ${t} يدويًا؟`,
+        a: `للتحويل يدويًا، ما عليك سوى ضرب قيمتك في ${f} بمضاعف سعر الصرف الحالي (${currentValue.toFixed(4)}). على سبيل المثال، لتحويل 100 ${f}، احسب: 100 × ${currentValue.toFixed(4)} = ${(100 * currentValue).toFixed(2)} ${t}.`
+      },
+      {
+        q: `أين يمكنني الحصول على أفضل سعر صرف للمعاملات؟`,
+        a: `عادةً ما تقدم بنوك التجزئة التقليدية أسعارًا أقل ملاءمة لأنها تضيف هامشًا بنسبة 2-5% أعلى من سعر الصرف المتوسط في السوق. للحصول على أسعار قريبة من سعر السوق المتوسط، ابحث عن خدمات تحويل الأموال الرقمية المخصصة أو موفري الحسابات متعددة العملات.`
+      }
+    ],
+    'ja': [
+      {
+        q: `なぜ${f}から${t}への為替レートは毎日変動するのですか？`,
+        a: `Exchange rates fluctuate 24/7 due to global market demand, interest rate decisions by central banks, inflation data, geopolitical events, and general economic stability in both regions.`
+      },
+      {
+        q: `${f}から${t}へ手動で換算するにはどうすればよいですか？`,
+        a: `To convert manually, simply multiply your value in ${f} by the current exchange rate multiplier (${currentValue.toFixed(4)}). For example, to convert 100 ${f}, calculate: 100 × ${currentValue.toFixed(4)} = ${(100 * currentValue).toFixed(2)} ${t}.`
+      },
+      {
+        q: `最もお得な取引為替レートはどこで入手できますか？`,
+        a: `Traditional retail banks usually offer less favorable rates because they add a markup of 2-5% on top of the mid-market exchange rate. To get rates closest to the mid-market price, look for dedicated digital money transfer services or multi-currency account providers.`
+      }
+    ]
+  };
+  return templates[loc] || templates['en'];
+};
+const localizedFaqList = getLocalizedCurrencyFaq(from, to, localizedFromName, localizedToName, locale);
+
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": localizedFaqList.map(item => ({
+    "@type": "Question",
+    "name": item.q,
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": item.a
+    }
+  }))
+};
+
+const getLocalizedParagraphs = (loc: string) => {
+  const templates = {
+    'en': {
+      p1: `The exchange rate between the <strong>${fromName} (${from})</strong> and the <strong>${toName} (${to})</strong> represents how much one currency is worth in terms of the other. For example, if the rate is ${currentValue.toFixed(4)}, it means 1 ${fromName} can purchase exactly ${currentValue.toFixed(4)} ${toName} in the global foreign exchange market.`,
+      p2: `Currency exchange rates are not static and fluctuate throughout the day. Key factors that dictate daily movements include:`,
+      li1: `<strong>Interest Rates</strong>: Decisions by central banks (like the Federal Reserve or European Central Bank) on deposit and lending rates directly impact currency yields.`,
+      li2: `<strong>Inflation Rates</strong>: Nations with lower inflation rates usually see their currency purchasing power appreciate compared to others.`,
+      li3: `<strong>Geopolitics</strong>: Political stability, international trade agreements, and regional elections influence investor confidence.`,
+      li4: `<strong>Current Account Balance</strong>: A nation's trade balance (surplus or deficit) affects global demand for its currency to settle transactions.`,
+      p3: `Historically, both ${fromName} and ${toName} have established reliable trading cycles determined by economic growth phases in their respective jurisdictions. When analyzing exchange charts, investors look for support levels (historical floors) and resistance points (historical ceilings) to assess future trends.`
+    },
+    'es': {
+      p1: `El tipo de cambio entre el <strong>${fromName} (${from})</strong> y el <strong>${toName} (${to})</strong> representa cuánto vale una moneda en términos de la otra. Por ejemplo, si la tasa es ${currentValue.toFixed(4)}, significa que 1 ${fromName} puede comprar exactamente ${currentValue.toFixed(4)} ${toName} en el mercado de divisas global.`,
+      p2: `Los tipos de cambio no son estáticos y fluctúan a lo largo del día. Los factores clave que dictan los movimientos diarios incluyen:`,
+      li1: `<strong>Tasas de interés</strong>: Las decisiones de los bancos centrales (como la Reserva Federal o el Banco Central Europeo) sobre las tasas de depósito y préstamo afectan directamente los rendimientos de las divisas.`,
+      li2: `<strong>Tasas de inflación</strong>: Las naciones con tasas de inflación más bajas suelen ver cómo se aprecia el poder adquisitivo de su moneda en comparación con otras.`,
+      li3: `<strong>Geopolítica</strong>: La estabilidad política, los acuerdos comerciales internacionales y las elecciones regionales influyen en la confianza de los inversores.`,
+      li4: `<strong>Balanza de cuenta corriente</strong>: La balanza comercial de una nación (superávit o déficit) afecta la demanda global de su moneda para liquidar transacciones.`,
+      p3: `Históricamente, tanto el ${fromName} como el ${toName} han establecido ciclos comerciales fiables determinados por las fases de crecimiento económico en sus respectivas jurisdicciones. Al analizar los gráficos de intercambio, los inversores buscan niveles de soporte (suelos históricos) y puntos de resistencia (techos históricos) para evaluar las tendencias futuras.`
+    },
+    'hi': {
+      p1: `<strong>${fromName} (${from})</strong> और <strong>${toName} (${to})</strong> के बीच विनिमय दर यह दर्शाती है कि एक मुद्रा का मूल्य दूसरी मुद्रा के संदर्भ में कितना है। उदाहरण के लिए, यदि दर ${currentValue.toFixed(4)} है, तो इसका मतलब है कि १ ${fromName} वैश्विक विदेशी मुद्रा बाजार में बिल्कुल ${currentValue.toFixed(4)} ${toName} खरीद सकता है।`,
+      p2: `मुद्रा विनिमय दरें स्थिर नहीं होती हैं और पूरे दिन बदलती रहती हैं। दैनिक उतार-चढ़ाव को निर्धारित करने वाले प्रमुख कारकों में शामिल हैं:`,
+      li1: `<strong>ब्याज दरें</strong>: जमा और ऋण दरों पर केंद्रीय बैंकों (जैसे फेडरल रिजर्व या यूरोपीय केंद्रीय बैंक) के निर्णय सीधे मुद्रा पैदावार को प्रभावित करते हैं।`,
+      li2: `<strong>मुद्रास्फीति दरें</strong>: कम मुद्रास्फीति दर वाले देश आमतौर पर दूसरों की तुलना में अपनी मुद्रा क्रय शक्ति को बढ़ते हुए देखते हैं।`,
+      li3: `<strong>भू-राजनीति</strong>: राजनीतिक स्थिरता, अंतर्राष्ट्रीय व्यापार समझौते और क्षेत्रीय चुनाव निवेशक के विश्वास को प्रभावित करते हैं।`,
+      li4: `<strong>चालू खाता संतुलन</strong>: एक राष्ट्र का व्यापार संतुलन (अधिशेष या घाटा) लेनदेन के निपटान के लिए उसकी मुद्रा की वैश्विक मांग को प्रभावित करता है।`,
+      p3: `ऐतिहासिक रूप से, ${fromName} और ${toName} दोनों ने अपने संबंधित क्षेत्रों में आर्थिक विकास के चरणों द्वारा निर्धारित विश्वसनीय व्यापारिक चक्र स्थापित किए हैं। विनिमय चार्ट का विश्लेषण करते समय, निवेशक भविष्य के रुझानों का आकलन करने के लिए समर्थन स्तर (ऐतिहासिक फर्श) और प्रतिरोध बिंदु (ऐतिहासिक छत) की तलाश करते हैं।`
+    },
+    'fr': {
+      p1: `Le taux de change entre le <strong>${fromName} (${from})</strong> et le <strong>${toName} (${to})</strong> représente la valeur d'une devise par rapport à l'autre. Par exemple, si le taux est de ${currentValue.toFixed(4)}, cela signifie que 1 ${fromName} peut acheter exactement ${currentValue.toFixed(4)} ${toName} sur le marché des changes mondial.`,
+      p2: `Les taux de change ne sont pas statiques et fluctuent tout au long de la journée. Les principaux facteurs qui dictent les mouvements quotidiens comprennent :`,
+      li1: `<strong>Taux d'intérêt</strong> : Les décisions des banques centrales (comme la Réserve fédérale ou la Banque centrale européenne) sur les taux de dépôt et de prêt ont un impact direct sur les rendements des devises.`,
+      li2: `<strong>Taux d'inflation</strong> : Les pays ayant des taux d'inflation plus faibles voient généralement le pouvoir d'achat de leur monnaie s'apprécier par rapport aux autres.`,
+      li3: `<strong>Géopolitique</strong> : La stabilité politique, les accords commerciaux internationaux et les élections régionales influencent la confiance des investisseurs.`,
+      li4: `<strong>Solde du compte courant</strong> : La balance commerciale d'une nation (excédent ou déficit) affecte la demande mondiale pour sa monnaie pour régler les transactions.`,
+      p3: `Historiquement, le ${fromName} et le ${toName} ont établi des cycles commerciaux fiables déterminés par les phases de croissance économique dans leurs juridictions respectives. Lors de l'analyse des graphiques de change, les investisseurs recherchent des niveaux de support (planchers historiques) et des points de résistance (plafonds historiques) pour évaluer les tendances futures.`
+    },
+    'pt': {
+      p1: `A taxa de câmbio entre o <strong>${fromName} (${from})</strong> e o <strong>${toName} (${to})</strong> representa quanto vale uma moeda em relação à outra. Por exemplo, se a taxa for ${currentValue.toFixed(4)}, significa que 1 ${fromName} pode comprar exatamente ${currentValue.toFixed(4)} ${toName} no mercado cambial global.`,
+      p2: `As taxas de câmbio não são estáticas e flutuam ao longo do dia. Os principais fatores que ditam os movimentos diários incluem:`,
+      li1: `<strong>Taxas de Juros</strong>: Decisões de bancos centrais (como o Federal Reserve ou o Banco Central Europeu) sobre taxas de depósito e empréstimo afetam diretamente os rendimentos das moedas.`,
+      li2: `<strong>Taxas de Inflação</strong>: Países com taxas de inflação mais baixas geralmente veem o poder de compra de sua moeda se valorizar em comparação com outros.`,
+      li3: `<strong>Geopolítica</strong>: Estabilidade política, acordos comerciais internacionais e eleições regionais influenciam a confiança dos investidores.`,
+      li4: `<strong>Balança de Transações Correntes</strong>: A balança comercial de uma nação (superávit ou déficit) afeta a quantidade global de sua moeda solicitada para liquidar transações.`,
+      p3: `Historically, tanto o ${fromName} quanto o ${toName} estabeleceram ciclos comerciais confiáveis, determinados pelas fases de crescimento econômico em suas respectivas jurisdições. Ao analisar gráficos cambiais, os investidores procuram níveis de suporte (pisos históricos) e pontos de resistência (tetos históricos) para avaliar tendências futuras.`
+    },
+    'de': {
+      p1: `Der Wechselkurs zwischen dem <strong>${fromName} (${from})</strong> und dem <strong>${toName} (${to})</strong> gibt an, wie viel eine Währung im Verhältnis zur anderen wert ist. Liegt der Kurs beispielsweise bei ${currentValue.toFixed(4)}, bedeutet dies, dass 1 ${fromName} auf dem globalen Devisenmarkt genau ${currentValue.toFixed(4)} ${toName} kaufen kann.`,
+      p2: `Wechselkurse sind nicht statisch und schwanken im Laufe des Tages. Zu den wichtigsten Faktoren, die die täglichen Bewegungen bestimmen, gehören:`,
+      li1: `<strong>Zinssätze</strong>: Entscheidungen von Zentralbanken (wie der Federal Reserve oder der Europäischen Zentralbank) über Einlagen- und Kreditzinsen wirken sich direkt auf die Währungsrenditen aus.`,
+      li2: `<strong>Inflationsraten</strong>: Länder mit niedrigeren Inflationsraten verzeichnen in der Regel eine Aufwertung der Kaufkraft ihrer Währung im Vergleich zu anderen.`,
+      li3: `<strong>Geopolitik</strong>: Politische Stabilität, internationale Handelsabkommen und regionale Wahlen beeinflussen das Vertrauen der Anleger.`,
+      li4: `<strong>Leistungsbilanzsaldo</strong>: Die Handelsbilanz eines Landes (Überschuss oder Defizit) beeinflusst die weltweite Nachfrage nach seiner Währung zur Abwicklung von Transaktionen.`,
+      p3: `Historisch gesehen haben sowohl der ${fromName} als auch der ${toName} verlässliche Handelszyklen etabliert, die durch die Wirtschaftswachstumsphasen in ihren jeweiligen Ländern bestimmt werden. Bei der Analyse von Wechselkursdiagrammen achten Anleger auf Unterstützungsniveaus (historische Tiefststände) und Widerstandspunkte (historische Höchststände), um zukünftige Trends einzuschätzen.`
+    },
+    'ar': {
+      p1: `يمثل سعر الصرف بين <strong>${fromName} (${from})</strong> و <strong>${toName} (${to})</strong> قيمة إحدى العملتين مقارنة بالعملة الأخرى. على سبيل المثال، إذا كان السعر هو ${currentValue.toFixed(4)}، فهذا يعني أن 1 ${fromName} يمكنه شراء ${currentValue.toFixed(4)} ${toName} بالضبط في سوق الصرف الأجنبي العالمي.`,
+      p2: `أسعار صرف العملات ليست ثابتة وتتقلب على مدار اليوم. تشمل العوامل الرئيسية التي تحدد التحركات اليومية ما يلي:`,
+      li1: `<strong>أسعار الفائدة</strong>: تؤثر قرارات البنوك المركزية (مثل الاحتياطي الفيدرالي أو البنك المركزي الأوروبي) بشأن أسعار الفائدة على الودائع والإقراض بشكل مباشر على عوائد العملات.`,
+      li2: `<strong>معدلات التضخم</strong>: عادة ما تشهد الدول ذات معدلات التضخم المنخفضة ارتفاعًا في القوة الشرائية لعملتها مقارنة بالدول الأخرى.`,
+      li3: `<strong>الجيوسياسية</strong>: يؤثر الاستقرار السياسي والاتفاقيات التجارية الدولية والانتخابات الإقليمية على ثقة المستثمرين.`,
+      li4: `<strong>ميزان الحساب الجاري</strong>: يؤثر الميزان التجاري للدولة (الفائض أو العجز) على الطلب العالمي على عملتها لتسوية المعاملات.`,
+      p3: `تاريخيًا، أرست كل من عملتي ${fromName} و ${toName} دورات تداول موثوقة تحددها مراحل النمو الاقتصادي في بلدانهما. عند تحليل مخططات الصرف، يبحث المستثمرون عن مستويات الدعم (الحدود الدنيا التاريخية) ونقاط المقاومة (الحدود القصوى التاريخية) لتقييم الاتجاهات المستقبلية.`
+    },
+    'ja': {
+      p1: `<strong>${fromName} (${from})</strong> と <strong>${toName} (${to})</strong> の間の為替レートは、一方の通貨が他方の通貨でどれだけの価値があるかを表します。たとえば、レートが ${currentValue.toFixed(4)} の場合、世界の外国為替市場で 1 ${fromName} はちょうど ${currentValue.toFixed(4)} ${toName} を購入できることを意味します。`,
+      p2: `通貨の為替レートは静的ではなく、一日中変動しています。毎日の変動を決定する主な要因は次のとおりです。`,
+      li1: `<strong>金利</strong>：中央銀行（連邦準備制度や欧州中央銀行など）による預金および貸出金利に関する決定は、通貨の利回りに直接影響します。`,
+      li2: `<strong>インフレ率</strong>：インフレ率が低い国は、通常、他国と比較して自国通貨の購買力が上昇します。`,
+      li3: `<strong>地政学</strong>：政治的安定、国際貿易協定、および地域の選挙は投資家の信頼感に影響を与えます。`,
+      li4: `<strong>経常収支</strong>：国の貿易収支（黒字または赤字）は、取引を決済するための自国通貨の世界的な需要に影響を与えます。`,
+      p3: `歴史的に、${fromName} と ${toName} はどちらも、それぞれの管轄区域における経済成長の局面によって決定される信頼できる取引サイクルを確立してきました。為替チャートを分析する際、投資家は将来のトレンドを評価するためにサポートレベル（過去の底値）とレジスタンスポイント（過去の高値）を探します。`
+    }
+  };
+  return templates[loc] || templates['en'];
+};
+const paragraphs = getLocalizedParagraphs(locale);
+
+const getLocalizedSectionHeadings = (loc: string) => {
+  const templates = {
+    'en': {
+      h1: `Understanding the ${from} to ${to} Exchange Rate`,
+      h2: 'What Drives Foreign Exchange Volatility?',
+      h3: 'Historical Context & Performance'
+    },
+    'es': {
+      h1: `Entendiendo el tipo de cambio de ${from} a ${to}`,
+      h2: '¿Qué impulsa la volatilidad de las divisas?',
+      h3: 'Contexto histórico y rendimiento'
+    },
+    'hi': {
+      h1: `${from} से ${to} विनिमय दर को समझना`,
+      h2: 'विदेशी मुद्रा अस्थिरता को क्या संचालित करता है?',
+      h3: 'ऐतिहासिक संदर्भ और प्रदर्शन'
+    },
+    'fr': {
+      h1: `Comprendre le taux de change ${from} contre ${to}`,
+      h2: 'Qu\'est-ce qui favorise la volatilité des changes ?',
+      h3: 'Contexte historique et performance'
+    },
+    'pt': {
+      h1: `Compreendendo a taxa de câmbio de ${from} para ${to}`,
+      h2: 'O que impulsiona a volatilidade cambial?',
+      h3: 'Contexto histórico e desempenho'
+    },
+    'de': {
+      h1: `Den Wechselkurs von ${from} zu ${to} verstehen`,
+      h2: 'Was treibt die Volatilität am Devisenmarkt an?',
+      h3: 'Historischer Kontext & Performance'
+    },
+    'ar': {
+      h1: `فهم سعر صرف ${from} مقابل ${to}`,
+      h2: 'ما الذي يسبب تقلبات أسعار الصرف؟',
+      h3: 'السياق التاريخي والأداء'
+    },
+    'ja': {
+      h1: `${from}から${to}への為替レートを理解する`,
+      h2: '外国為替の変動要因とは？',
+      h3: '歴史的背景 & パフォーマンス'
+    }
+  };
+  return templates[loc] || templates['en'];
+};
+const headings = getLocalizedSectionHeadings(locale);
+
+// Define related currency conversions
+const relatedConversions = [
+  { href: `/currency/${to.toLowerCase()}-to-${from.toLowerCase()}`, label: `${to} to ${from} (Reverse)` },
+  { href: `/currency/usd-to-eur`, label: `USD to EUR` },
+  { href: `/currency/usd-to-inr`, label: `USD to INR` },
+  { href: `/currency/eur-to-usd`, label: `EUR to USD` },
+  { href: `/currency/gbp-to-inr`, label: `GBP to INR` }
+].filter(item => !item.href.includes(`${from.toLowerCase()}-to-${to.toLowerCase()}`));
+
+const localizedRelatedConversions = relatedConversions.map(item => ({
+  href: getLocalizedHref(item.href),
+  label: item.label.includes('Reverse') ? `${to} to ${from} (${t('reverse', locale) || 'Reverse'})` : item.label
+}));
+
+const lastUpdated = new Date(latestDate).toLocaleDateString(locale === 'en' ? 'en-US' : locale, {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  timeZone: 'UTC'
+});
+---
+
+<Layout title={pageTitle} description={pageDescription}>
+  <script type="application/ld+json" is:inline set:html={JSON.stringify(breadcrumbSchema)} />
+  <script type="application/ld+json" is:inline set:html={JSON.stringify(faqSchema)} />
+  <script type="application/ld+json" is:inline set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": `${canonicalUrl}#webpage`,
+    "url": canonicalUrl,
+    "name": pageTitle,
+    "description": pageDescription
+  })} />
+  <script type="application/ld+json" is:inline set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "FinancialProduct",
+    "name": `${from} to ${to} Exchange Rate Conversion`,
+    "description": `Exchange rate specifications for converting ${fromName} (${from}) to ${toName} (${to}).`,
+    "offers": {
+      "@type": "Offer",
+      "price": currentValue.toFixed(4),
+      "priceCurrency": to
+    }
+  })} />
+
+  <div class="max-w-6xl mx-auto py-6 sm:py-10 md:py-16 px-4">
+    
+    <!-- Breadcrumbs -->
+    <nav class="flex items-center gap-1.5 sm:gap-2 mb-5 sm:mb-6 text-[10px] sm:text-[11px] font-mono text-mute uppercase tracking-widest overflow-x-auto no-scrollbar whitespace-nowrap pb-1" aria-label="Breadcrumb">
+      <a href={getLocalizedHref("/")} class="hover:text-ink transition-colors">{t('nav_home', locale)}</a>
+      <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
+      <a href={getLocalizedHref("/unit-converters/currency")} class="hover:text-ink transition-colors">{translateCategory('currency', locale)}</a>
+      <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
+      <span class="text-ink font-semibold">{from} to {to}</span>
+    </nav>
+
+    <!-- Header Title -->
+    <header class="mb-7 sm:mb-10">
+      <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-[-0.04em] text-ink mb-3 sm:mb-4 leading-tight">
+        {fromName} to {toName}
+      </h1>
+      <p class="text-body max-w-2xl leading-relaxed text-sm">
+        {curStrings.headerDesc}
+      </p>
+    </header>
+
+    <!-- Mid-market Instant Rate box -->
+    <div class="bg-canvas border border-hairline rounded-md shadow-[0_1px_1px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.04)] overflow-hidden mb-8 sm:mb-10">
+      <div class="p-6 sm:p-10 md:p-12 text-center border-b border-hairline bg-canvas-soft-2 flex flex-col items-center">
+        <div class="text-[11px] font-mono text-mute uppercase tracking-widest mb-3">{curStrings.liveExchangeRate}</div>
+        
+        <div class="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 mb-4">
+          <div class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-ink break-all">
+            1 {from} = <span class="text-primary" id="live-rate-val" data-from={from} data-to={to}>{currentValue.toFixed(4)}</span> {to}
+          </div>
+          <div class={`px-2.5 py-1 rounded-full text-xs font-bold ${change.isUp ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'}`}>
+            {change.formatted}
+          </div>
+        </div>
+
+        <p class="text-xs sm:text-sm text-mute max-w-lg leading-relaxed">
+          {curStrings.midMarketDesc}
+        </p>
+      </div>
+
+      <!-- Real-Time Interactive Calculator Widget -->
+      <div class="p-6 sm:p-10 bg-canvas grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 border-b border-hairline">
+        <div class="space-y-4">
+          <h2 class="text-base font-semibold text-ink flex items-center gap-2">
+            <Icon name="hugeicons:calculate" class="w-5 h-5 text-primary" />
+            {curStrings.quickCalculator}
+          </h2>
+          
+          <div class="space-y-3">
+            <div class="space-y-1">
+              <label class="text-[10px] font-mono text-mute uppercase tracking-wider">{curStrings.amount} ({from})</label>
+              <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-mute font-mono text-sm">{fromSymbol}</span>
+                <input
+                  id="calc-from-input"
+                  type="number"
+                  value="1"
+                  step="any"
+                  class="w-full h-11 pl-9 pr-4 bg-canvas-soft border border-hairline rounded-sm text-base font-semibold text-ink focus:outline-none focus:border-hairline-strong transition-all"
+                />
+              </div>
+            </div>
+
+            <div class="space-y-1">
+              <label class="text-[10px] font-mono text-mute uppercase tracking-wider">{curStrings.convertedResult} ({to})</label>
+              <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-mute font-mono text-sm">{toSymbol}</span>
+                <input
+                  id="calc-to-input"
+                  type="number"
+                  readonly
+                  value={currentValue.toFixed(4)}
+                  class="w-full h-11 pl-9 pr-4 bg-canvas-soft-2 border border-hairline rounded-sm text-base font-bold text-primary focus:outline-none cursor-default"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7-Day Mini Chart -->
+        <div class="space-y-4">
+          <h2 class="text-base font-semibold text-ink flex items-center gap-2">
+            <Icon name="hugeicons:chart-line-data-01" class="w-5 h-5 text-primary" />
+            {curStrings.sevenDayTrajectory}
+          </h2>
+          
+          <div class="h-24 bg-canvas-soft border border-hairline rounded-sm p-3 relative overflow-hidden flex items-center justify-center">
+            <div class="absolute inset-x-0 top-1/2 border-t border-hairline/30 pointer-events-none"></div>
+            <svg class="w-full h-full overflow-visible" viewBox="0 0 120 40" preserveAspectRatio="none">
+              <path
+                d={sparkline}
+                fill="none"
+                stroke={change.isUp ? "#10b981" : "#ef4444"}
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </div>
+          <div class="flex items-center justify-between text-[10px] font-mono text-mute">
+            <span>{curStrings.sevenDaysAgo}</span>
+            <span>{curStrings.today}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Freshness footer -->
+      <div class="px-6 py-3 bg-canvas-soft-2 flex items-center justify-between text-xs text-mute font-sans">
+        <div class="flex items-center gap-1.5">
+          <Icon name="hugeicons:clock-01" class="w-3.5 h-3.5" />
+          <span>{curStrings.ratesLastUpdated} <strong class="text-ink" id="last-updated-time">{lastUpdated}</strong></span>
+        </div>
+        <a href={getLocalizedHref("/unit-converters/currency")} class="text-primary hover:underline font-semibold flex items-center gap-1">
+          {curStrings.fullDashboard}
+          <Icon name="hugeicons:arrow-right-01" class="w-3.5 h-3.5" />
+        </a>
+      </div>
+    </div>
+
+    <!-- Educational Description Columns -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-10 mb-12 sm:mb-16">
+      
+      <!-- Main Content Block -->
+      <div class="lg:col-span-2 space-y-10">
+        
+        <!-- Explanation article -->
+        <section class="bg-canvas border border-hairline rounded-md p-6 sm:p-8 space-y-5">
+          <h2 class="text-xl font-semibold text-ink">{headings.h1}</h2>
+          <p class="text-sm text-body leading-relaxed" set:html={paragraphs.p1} />
+
+          <h3 class="text-base font-semibold text-ink pt-3 border-t border-hairline">{headings.h2}</h3>
+          <p class="text-sm text-body leading-relaxed" set:html={paragraphs.p2} />
+          <ul class="list-disc pl-5 text-sm text-body leading-relaxed space-y-2">
+            <li set:html={paragraphs.li1} />
+            <li set:html={paragraphs.li2} />
+            <li set:html={paragraphs.li3} />
+            <li set:html={paragraphs.li4} />
+          </ul>
+
+          <h3 class="text-base font-semibold text-ink pt-3 border-t border-hairline">{headings.h3}</h3>
+          <p class="text-sm text-body leading-relaxed" set:html={paragraphs.p3} />
+        </section>
+
+        <!-- FAQs -->
+        <section class="bg-canvas border border-hairline rounded-md p-6 sm:p-8 space-y-6">
+          <h2 class="text-xl font-semibold text-ink">{curStrings.faqTitle}</h2>
+          <div class="space-y-6 divide-y divide-hairline">
+            {localizedFaqList.map((item, idx) => (
+              <div class={idx > 0 ? "pt-6" : ""}>
+                <h4 class="text-base font-semibold text-ink mb-2">{item.q}</h4>
+                <p class="text-sm text-body leading-relaxed" set:html={item.a} />
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <!-- Right Sidebar -->
+      <aside class="space-y-6">
+        
+        <!-- Related conversions list -->
+        <div class="bg-canvas border border-hairline rounded-md p-6 space-y-4">
+          <h3 class="text-base font-semibold text-ink">{curStrings.relatedConversions}</h3>
+          <ul class="space-y-2.5 text-xs">
+            {localizedRelatedConversions.map(link => (
+              <li>
+                <a href={link.href} class="text-link hover:underline flex items-center gap-1.5 font-medium">
+                  <Icon name="hugeicons:arrow-right-01" class="w-3.5 h-3.5 shrink-0 text-mute" />
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <!-- Full converter category backlink -->
+        <div class="p-5 bg-primary/5 border border-primary/15 rounded-md">
+          <h3 class="text-xs font-bold text-primary uppercase tracking-wider mb-2">{curStrings.fullCurrencyTool}</h3>
+          <p class="text-xs text-ink/70 leading-relaxed mb-3">
+            {curStrings.fullCurrencyToolDesc}
+          </p>
+          <a
+            href={getLocalizedHref("/unit-converters/currency")}
+            class="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+          >
+            {curStrings.openCurrencyDashboard}
+            <Icon name="hugeicons:arrow-right-01" class="w-3.5 h-3.5 font-bold" />
+          </a>
+        </div>
+      </aside>
+    </div>
+  </div>
+</Layout>
+
+<script define:vars={{ currentValue }}>
+  const fromInput = document.getElementById('calc-from-input');
+  const toInput = document.getElementById('calc-to-input');
+
+  let currentRate = currentValue;
+
+  // Real-time calculation logic
+  function performCalculation() {
+    const rawVal = fromInput.value.trim();
+    if (rawVal === '' || isNaN(parseFloat(rawVal))) {
+      toInput.value = '';
+      return;
+    }
+    const val = parseFloat(rawVal);
+    toInput.value = (val * currentRate).toFixed(4);
+  }
+
+  if (fromInput && toInput) {
+    fromInput.addEventListener('input', performCalculation);
+  }
+
+  // Load fresh rate dynamically if available
+  const rateValEl = document.getElementById('live-rate-val');
+  if (rateValEl) {
+    const fromCur = rateValEl.getAttribute('data-from');
+    const toCur = rateValEl.getAttribute('data-to');
+
+    // Attempt to read from shared localStorage cache (populated by main widget)
+    try {
+      const cacheKey = 'realunitconverter_rates_cache';
+      const cacheStr = localStorage.getItem(cacheKey);
+      if (cacheStr) {
+        const cache = JSON.parse(cacheStr);
+        // Cache valid for 1 hour
+        if (Date.now() - cache.timestamp < 3600000 && cache.rates) {
+          const rates = cache.rates;
+          const fromRate = rates[fromCur.toUpperCase()];
+          const toRate = rates[toCur.toUpperCase()];
+          if (fromRate && toRate) {
+            currentRate = toRate / fromRate;
+            rateValEl.textContent = currentRate.toFixed(4);
+            performCalculation();
+          }
+        }
+      }
+    } catch (_) {}
+
+    // Async live fetch in the background to ensure absolute rate freshness
+    fetch(`https://api.frankfurter.app/latest?from=${fromCur}`)
+      .then(res => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then(data => {
+        if (data && data.rates && data.rates[toCur.toUpperCase()]) {
+          currentRate = data.rates[toCur.toUpperCase()];
+          rateValEl.textContent = currentRate.toFixed(4);
+          
+          const updatedDate = new Date(data.date).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric',
+            timeZone: 'UTC',
+            timeZoneName: 'short'
+          });
+          
+          const timeEl = document.getElementById('last-updated-time');
+          if (timeEl) timeEl.textContent = updatedDate;
+          
+          performCalculation();
+        }
+      })
+      .catch(() => {});
+  }
+</script>
+
+<style>
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type=number] { -moz-appearance: textfield; }
+</style>

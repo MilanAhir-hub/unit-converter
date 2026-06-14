@@ -3,6 +3,9 @@ import Layout from '../../layouts/Layout.astro';
 import { navigationData, isCategory } from '../../data/navigation';
 import { Icon } from 'astro-icon/components';
 import Dropdown from '../../components/Dropdown.astro';
+import LearnSection from '../../components/learn/LearnSection.astro';
+import CurrencyDashboard from '../../components/CurrencyDashboard.astro';
+import { fetchHistoricalRates } from '../../utils/currencyApi';
 import {
   converterCategories,
   getCategoryBySlug,
@@ -32,9 +35,54 @@ export async function getStaticPaths() {
   return paths;
 }
 
-const { title, categoryTitle, slug: propSlug } = Astro.props;
+let { title, categoryTitle, slug: propSlug } = Astro.props;
 const { slug: paramSlug } = Astro.params;
 const slug = propSlug || paramSlug || '';
+
+// Fallback lookup from navigationData if rendering dynamically under SSR (props are empty)
+if (!title || !categoryTitle) {
+  for (const item of navigationData) {
+    if (isCategory(item)) {
+      const foundSubItem = item.items.find(sub => {
+        const segs = sub.href.split('/').filter(Boolean);
+        return segs[segs.length - 1] === slug;
+      });
+      if (foundSubItem) {
+        title = foundSubItem.title;
+        categoryTitle = item.title;
+        break;
+      }
+    }
+  }
+}
+
+if (!title || !categoryTitle) {
+  return Astro.redirect('/404');
+}
+
+import { t, translateCategory, translateUnit, translatePopularRoute } from '../../utils/i18n';
+const locale = Astro.currentLocale || 'en';
+
+const localizedCategoryTitle = categoryTitle === 'Unit Converters' ? t('nav_converters', locale) : (categoryTitle === 'Popular Conversions' ? t('nav_popular', locale) : categoryTitle);
+
+const localizedTitle = slug.includes('-to-') 
+  ? translatePopularRoute(slug, locale, title) 
+  : translateCategory(slug, locale);
+
+const getLocalizedDescription = (tVal: string, loc: string) => {
+  const templates: Record<string, string> = {
+    'en': `Free, fast, and accurate ${tVal}. Convert between various units instantly.`,
+    'es': `${tVal} gratis, rápido y preciso. Convierta entre varias unidades al instante.`,
+    'hi': `मुफ़्त, तेज़ और सटीक ${tVal}। विभिन्न इकाइयों के बीच तुरंत रूपांतरण करें।`,
+    'fr': `${tVal} gratuit, rapide et précis. Convertissez instantanément entre différentes unités.`,
+    'pt': `${tVal} gratuito, rápido e preciso. Converta entre várias unidades instantaneamente.`,
+    'de': `Kostenloser, schneller und genauer ${tVal}. Rechnen Sie Einheiten sofort um.`,
+    'ar': `محول ${tVal} مجاني وسريع ودقيق. قم بالتحويل بين الوحدات المختلفة على الفور.`,
+    'ja': `無料、迅速、正確な${tVal}。さまざまな単位を瞬時に変換します。`
+  };
+  return templates[loc] || templates['en'];
+};
+const localizedDescription = getLocalizedDescription(localizedTitle, locale);
 
 // Look up this converter in our engine
 const converterDef = getCategoryBySlug(slug);
@@ -45,11 +93,82 @@ const fallbackUnits = [
   { key: 'unit-b', label: 'Unit B', symbol: 'B', factor: 1 },
 ];
 
-const units        = converterDef?.units ?? fallbackUnits;
-const defaultFrom  = converterDef?.defaultFrom ?? units[0].key;
-const defaultTo    = converterDef?.defaultTo   ?? (units[1]?.key ?? units[0].key);
-const description  = converterDef?.description ??
-  `Free, fast, and accurate ${title.toLowerCase()}. Convert between various units instantly.`;
+let units = converterDef?.units ?? fallbackUnits;
+
+if (slug === 'currency') {
+  try {
+    const res = await fetch('https://api.frankfurter.app/latest?from=USD');
+    if (!res.ok) {
+      throw new Error(`Frankfurter API returned status ${res.status}`);
+    }
+    const data = await res.json();
+    if (data && data.rates) {
+      const rates = { USD: 1.0, ...data.rates };
+      units = units.map(u => {
+        const rate = rates[u.key.toUpperCase()];
+        if (rate) {
+          return {
+            ...u,
+            factor: 1 / rate
+          };
+        }
+        return u;
+      });
+      if (converterDef) {
+        converterDef.units = units;
+      }
+    }
+  } catch (e) {
+    console.error('Failed to fetch build-time currency rates, falling back to offline rates:', e);
+    // Use fallback rates to prevent build crash
+    const rates: Record<string, number> = {
+      USD: 1.0, EUR: 0.92, INR: 83.5, GBP: 0.78, JPY: 157.0, AUD: 1.50, CAD: 1.37, CHF: 0.89, CNY: 7.25, NZD: 1.63,
+      SEK: 10.5, NOK: 10.6, MXN: 18.2, SGD: 1.35, HKD: 7.8, KRW: 1380.0, TRY: 32.5, RUB: 89.0, BRL: 5.4, ZAR: 18.0
+    };
+    units = units.map(u => {
+      const rate = rates[u.key.toUpperCase()];
+      if (rate) {
+        return {
+          ...u,
+          factor: 1 / rate
+        };
+      }
+      return u;
+    });
+    if (converterDef) {
+      converterDef.units = units;
+    }
+  }
+}
+
+const localizedUnits = units.map(u => ({
+  ...u,
+  label: translateUnit(u.key, locale, u.label)
+}));
+
+const popularUnitMapping: Record<string, { from: string; to: string }> = {
+  'inches-to-cm': { from: 'inch', to: 'centimeter' },
+  'cm-to-inches': { from: 'centimeter', to: 'inch' },
+  'feet-to-cm': { from: 'foot', to: 'centimeter' },
+  'cm-to-feet': { from: 'centimeter', to: 'foot' },
+  'km-to-miles': { from: 'kilometer', to: 'mile' },
+  'miles-to-km': { from: 'mile', to: 'kilometer' },
+  'kg-to-pounds': { from: 'kilogram', to: 'pound' },
+  'pounds-to-kg': { from: 'pound', to: 'kilogram' },
+  'celsius-to-fahrenheit': { from: 'celsius', to: 'fahrenheit' },
+  'fahrenheit-to-celsius': { from: 'fahrenheit', to: 'celsius' },
+  'liters-to-gallons': { from: 'liter', to: 'gallon-us' },
+  'gallons-to-liters': { from: 'gallon-us', to: 'liter' },
+  'mb-to-gb': { from: 'megabyte', to: 'gigabyte' },
+  'gb-to-tb': { from: 'gigabyte', to: 'terabyte' },
+  'binary-to-decimal': { from: 'binary', to: 'decimal' },
+  'decimal-to-binary': { from: 'decimal', to: 'binary' }
+};
+
+const mapping = popularUnitMapping[slug];
+const defaultFrom  = mapping ? mapping.from : (converterDef?.defaultFrom ?? units[0].key);
+const defaultTo    = mapping ? mapping.to   : (converterDef?.defaultTo   ?? (units[1]?.key ?? units[0].key));
+const description  = localizedDescription;
 
 // Build reference table at build time for the default unit pair
 const refTable = converterDef
@@ -64,50 +183,340 @@ if (converterDef) {
   } catch (_) {}
 }
 
-const fromUnit = units.find(u => u.key === defaultFrom);
-const toUnit   = units.find(u => u.key === defaultTo);
+const fromUnit = localizedUnits.find(u => u.key === defaultFrom);
+const toUnit   = localizedUnits.find(u => u.key === defaultTo);
 
-// Page FAQ
-const faq = [
-  {
-    q: `How do I use the ${title}?`,
-    a: `Enter your value in the "From" field and select your starting unit. Then choose your target unit. The result is calculated instantly — no button click needed.`
-  },
-  {
-    q: `Is the ${title} accurate?`,
-    a: `Yes. We use industry-standard conversion factors derived from SI and NIST standards to ensure maximum precision for all conversions.`
-  },
-  {
-    q: `Can I swap the conversion direction?`,
-    a: `Absolutely — click the swap button (⇄) in the centre to instantly reverse the conversion direction.`
-  },
-  {
-    q: `Does the converter work offline?`,
-    a: `Yes. All conversion logic runs entirely in your browser. No network request is made when you type a value or change a unit.`
-  },
-];
+const getLocalizedFaq = (tVal: string, loc: string) => {
+  const templates: Record<string, Array<{ q: string; a: string }>> = {
+    'en': [
+      {
+        q: `How do I use the ${tVal}?`,
+        a: `Enter your value in the "From" field and select your starting unit. Then choose your target unit. The result is calculated instantly — no button click needed.`
+      },
+      {
+        q: `Is the ${tVal} accurate?`,
+        a: `Yes. We use industry-standard conversion factors derived from SI and NIST standards to ensure maximum precision for all conversions.`
+      },
+      {
+        q: `Can I swap the conversion direction?`,
+        a: `Absolutely — click the swap button (⇄) in the centre to instantly reverse the conversion direction.`
+      },
+      {
+        q: `Does the converter work offline?`,
+        a: `Yes. All conversion logic runs entirely in your browser. No network request is made when you type a value or change a unit.`
+      }
+    ],
+    'es': [
+      {
+        q: `¿Cómo uso el ${tVal}?`,
+        a: `Ingrese su valor en el campo "Desde" y seleccione su unidad inicial. Luego elija su unidad de destino. El resultado se calcula al instante, sin necesidad de hacer clic en un botón.`
+      },
+      {
+        q: `¿Es preciso el ${tVal}?`,
+        a: `Sí. Utilizamos factores de conversión estándar de la industria derivados de las normas SI y NIST para garantizar la máxima precisión en todas las conversiones.`
+      },
+      {
+        q: `¿Puedo cambiar la dirección de conversión?`,
+        a: `Absolutamente: haga clic en el botón de intercambio (⇄) en el centro para invertir instantáneamente la dirección de conversión.`
+      },
+      {
+        q: `¿Funciona el conversor sin conexión?`,
+        a: `Sí. Toda la lógica de conversión se ejecuta completamente en su navegador. No se realiza ninguna solicitud de red cuando escribe un valor o cambia una unidad.`
+      }
+    ],
+    'hi': [
+      {
+        q: `मैं ${tVal} का उपयोग कैसे करूँ?`,
+        a: `अपने मान को "से" फ़ील्ड में दर्ज करें और अपनी प्रारंभिक इकाई का चयन करें। फिर अपनी लक्षित इकाई चुनें। परिणाम तुरंत गणना किया जाता है — किसी बटन पर क्लिक करने की आवश्यकता नहीं है।`
+      },
+      {
+        q: `क्या ${tVal} सटीक है?`,
+        a: `हाँ। हम सभी रूपांतरणों के लिए अधिकतम सटीकता सुनिश्चित करने के लिए SI और NIST मानकों से प्राप्त उद्योग-मानक रूपांतरण कारकों का उपयोग करते हैं।`
+      },
+      {
+        q: `क्या मैं रूपांतरण की दिशा बदल सकता हूँ?`,
+        a: `बिल्कुल — रूपांतरण की दिशा को तुरंत उलटने के लिए केंद्र में स्वैप बटन (⇄) पर क्लिक करें।`
+      },
+      {
+        q: `क्या कनवर्टर ऑफ़लाइन काम करता है?`,
+        a: `हाँ। सभी रूपांतरण तर्क पूरी तरह से आपके ब्राउज़र में चलते हैं। जब आप कोई मान लिखते हैं या इकाई बदलते हैं तो कोई नेटवर्क अनुरोध नहीं किया जाता है।`
+      }
+    ],
+    'fr': [
+      {
+        q: `Comment utiliser le ${tVal} ?`,
+        a: `Saisissez votre valeur dans le champ "De" et sélectionnez votre unité de départ. Choisissez ensuite votre unité cible. Le résultat est calculé instantanément — aucun clic sur un bouton n'est nécessaire.`
+      },
+      {
+        q: `Le ${tVal} est-il précis ?`,
+        a: `Oui. Nous utilisons des facteurs de conversion standard de l'industrie dérivés des normes SI et NIST pour garantir une précision maximale pour toutes les conversions.`
+      },
+      {
+        q: `Puis-je inverser le sens de conversion ?`,
+        a: `Absolument — cliquez sur le bouton d'échange (⇄) au centre pour inverser instantanément le sens de conversion.`
+      },
+      {
+        q: `Le convertisseur fonctionne-t-il hors ligne ?`,
+        a: `Oui. Toute la logique de conversion s'exécute entièrement dans votre navigateur. Aucune requête réseau n'est effectuée lorsque vous saisissez une valeur ou changez d'unité.`
+      }
+    ],
+    'pt': [
+      {
+        q: `Como usar o ${tVal}?`,
+        a: `Insira seu valor no campo "Desde" e selecione sua unidade inicial. Em seguida, escolha sua unidade de destino. O resultado é calculado instantaneamente — sem necessidade de clicar em um botão.`
+      },
+      {
+        q: `O ${tVal} é preciso?`,
+        a: `Sim. Usamos fatores de conversão padrão da indústria derivados dos padrões SI e NIST para garantir a máxima precisão em todas as conversões.`
+      },
+      {
+        q: `Posso inverter a direção da conversão?`,
+        a: `Absolutamente — clique no botão de troca (⇄) no centro para inverter instantaneamente a direção da conversão.`
+      },
+      {
+        q: `O conversor funciona offline?`,
+        a: `Sim. Toda a lógica de conversão é executada inteiramente no seu navegador. Nenhuma solicitação de rede é feita quando você digita um valor ou altera uma unidade.`
+      }
+    ],
+    'de': [
+      {
+        q: `Wie verwende ich den ${tVal}?`,
+        a: `Geben Sie Ihren Wert in das Feld „Von“ ein und wählen Sie Ihre Ausgangseinheit. Wählen Sie dann Ihre Zieleinheit. Das Ergebnis wird sofort berechnet – es ist kein Klick auf eine Schaltfläche erforderlich.`
+      },
+      {
+        q: `Ist der ${tVal} genau?`,
+        a: `Ja. Wir verwenden branchenübliche Umrechnungsfaktoren, die von SI- und NIST-Standards abgeleitet sind, um maximale Präzision bei allen Umrechnungen zu gewährleisten.`
+      },
+      {
+        q: `Kann ich die Umrechnungsrichtung tauschen?`,
+        a: `Absolut – klicken Sie auf die Tauschschaltfläche (⇄) in der Mitte, um die Umrechnungsrichtung sofort umzukehren.`
+      },
+      {
+        q: `Funktioniert der Umrechner offline?`,
+        a: `Ja. Die gesamte Umrechnungslogik läuft vollständig in Ihrem Browser. Es wird keine Netzwerkanfrage gestellt, wenn Sie einen Wert eingeben oder eine Einheit ändern.`
+      }
+    ],
+    'ar': [
+      {
+        q: `كيف يمكنني استخدام محول ${tVal}؟`,
+        a: `أدخل قيمتك في حقل "من" وحدد وحدة البداية الخاصة بك. ثم اختر الوحدة المستهدفة. يتم حساب النتيجة على الفور - لا حاجة للنقر على أي زر.`
+      },
+      {
+        q: `هل محول ${tVal} دقيق؟`,
+        a: `نعم. نحن نستخدم عوامل تحويل قياسية في الصناعة مستمدة من معايير SI و NIST لضمان أقصى قدر من الدقة لجميع عمليات التحويل.`
+      },
+      {
+        q: `هل يمكنني تبديل اتجاه التحويل؟`,
+        a: `بالتأكيد - انقر فوق زر التبديل (⇄) في المنتصف لعكس اتجاه التحويل على الفور.`
+      },
+      {
+        q: `هل يعمل المحول بدون اتصال بالإنترنت؟`,
+        a: `نعم. تعمل جميع عمليات التحويل بالكامل في متصفحك. لا يتم إجراء أي طلب شبكة عند كتابة قيمة أو تغيير وحدة.`
+      }
+    ],
+    'ja': [
+      {
+        q: `${tVal}の使い方は？`,
+        a: `「から」フィールドに数値を入力し、開始単位を選択します。次に、対象の単位を選択します。結果は即座に計算されます（ボタンをクリックする必要はありません）。`
+      },
+      {
+        q: `${tVal}は正確ですか？`,
+        a: `はい。すべての変換において最大の精度を保証するため、SIおよびNIST規格に準拠した業界標準 of 変換係数を使用しています。`
+      },
+      {
+        q: `変換方向を入れ替えることはできますか？`,
+        a: `はい、中央の入れ替えボタン（⇄）をクリックすると、変換方向が即座に逆になります。`
+      },
+      {
+        q: `変換ツールはオフラインで動作しますか？`,
+        a: `はい。すべての変換ロジックはブラウザ上で完全に実行されます。値の入力や単位の変更時にネットワーク要求は行われません。`
+      }
+    ]
+  };
+  return templates[loc] || templates['en'];
+};
+const faq = getLocalizedFaq(localizedTitle, locale);
+
+const getLocalizedHowToUse = (tVal: string, loc: string) => {
+  const templates: Record<string, string[]> = {
+    'en': [
+      `Enter any numerical value in the <strong class="text-ink">From</strong> field on the left. The result appears instantly in the <strong class="text-ink">To</strong> field — no button click required.`,
+      `Use the dropdowns to change the source or target unit at any time. Tap the <strong class="text-ink">⇄ swap button</strong> to quickly reverse the conversion direction.`,
+      `Press <strong class="text-ink">Copy</strong> to copy the full result statement to your clipboard, ready to paste anywhere.`
+    ],
+    'es': [
+      `Ingrese cualquier valor numérico en el campo <strong class="text-ink">Desde</strong> a la izquierda. El resultado aparece instantáneamente en el campo <strong class="text-ink">Hacia</strong>, sin necesidad de hacer clic en ningún botón.`,
+      `Utilice los menús desplegables para cambiar la unidad de origen o de destino en cualquier momento. Toque el <strong class="text-ink">botón de intercambio ⇄</strong> para invertir rápidamente la dirección de conversión.`,
+      `Presione <strong class="text-ink">Copiar</strong> para copiar la declaración de resultado completa en su portapapeles, lista para pegar en cualquier lugar.`
+    ],
+    'hi': [
+      `बाईं ओर <strong class="text-ink">से</strong> फ़ील्ड में कोई भी संख्यात्मक मान दर्ज करें। परिणाम तुरंत <strong class="text-ink">तक</strong> फ़ील्ड में दिखाई देता है — किसी बटन पर क्लिक करने की आवश्यकता नहीं है।`,
+      `किसी भी समय स्रोत या लक्ष्य इकाई को बदलने के लिए ड्रॉपडाउन का उपयोग करें। रूपांतरण की दिशा को तुरंत बदलने के लिए <strong class="text-ink">⇄ स्वैप बटन</strong> को टैप करें।`,
+      `अपने क्लिपबोर्ड पर पूर्ण परिणाम विवरण कॉपी करने के लिए <strong class="text-ink">कॉपी</strong> दबाएं, जिसे कहीं भी पेस्ट किया जा सकता है।`
+    ],
+    'fr': [
+      `Saisissez n'importe quelle valeur numérique dans le champ <strong class="text-ink">De</strong> à gauche. Le résultat apparaît instantanément dans le champ <strong class="text-ink">À</strong> — aucun clic de bouton n'est requis.`,
+      `Utilisez les listes déroulantes pour modifier l'unité source ou cible à tout moment. Appuyez sur le <strong class="text-ink">bouton d'échange ⇄</strong> pour inverser rapidement le sens de la conversion.`,
+      `Appuyez sur <strong class="text-ink">Copier</strong> pour copier la déclaration de résultat complète dans votre presse-papiers, prête à être collée n'importe où.`
+    ],
+    'pt': [
+      `Insira qualquer valor numérico no campo <strong class="text-ink">Desde</strong> à esquerda. O resultado aparece instantaneamente no campo <strong class="text-ink">Para</strong> — nenhum clique de botão é necessário.`,
+      `Use os menus suspensos para alterar a unidade de origem ou destino a qualquer momento. Toque no <strong class="text-ink">botão de troca ⇄</strong> para reverter rapidamente a direção da conversão.`,
+      `Pressione <strong class="text-ink">Copiar</strong> para copiar la declaração de resultado completa para a área de transferência, pronta para colar em qualquer lugar.`
+    ],
+    'de': [
+      `Geben Sie einen beliebigen numerischen Wert in das linke Feld <strong class="text-ink">Von</strong> ein. Das Ergebnis erscheint sofort im Feld <strong class="text-ink">Nach</strong> – kein Klick auf eine Schaltfläche erforderlich.`,
+      `Verwenden Sie die Dropdown-Listen, um die Ausgangs- oder Zieleinheit jederzeit zu ändern. Tippen Sie auf die <strong class="text-ink">⇄ Tauschschaltfläche</strong>, um die Umrechnungsrichtung schnell umzukehren.`,
+      `Drücken Sie auf <strong class="text-ink">Kopieren</strong>, um das vollständige Ergebnis in Ihre Zwischenablage zu kopieren, sodass Sie es überall einfügen können.`
+    ],
+    'ar': [
+      `أدخل أي قيمة عددية في حقل <strong class="text-ink">من</strong> على اليسار. تظهر النتيجة على الفور في حقل <strong class="text-ink">إلى</strong> - لا يلزم النقر فوق أي زر.`,
+      `استخدم القوائم المنسدلة لتغيير وحدة المصدر أو الوحدة المستهدفة في أي وقت. اضغط على <strong class="text-ink">زر التبديل ⇄</strong> لعكس اتجاه التحويل بسرعة.`,
+      `اضغط على <strong class="text-ink">نسخ</strong> لنسخ بيان النتيجة الكامل إلى الحافظة الخاصة بك، لتكون جاهزة للصقها في أي مكان.`
+    ],
+    'ja': [
+      `左側の<strong class="text-ink">から</strong>フィールドに任意の数値を入力します。結果は即座に<strong class="text-ink">まで</strong>フィールドに表示されます（ボタンをクリックする必要はありません）。`,
+      `ドロップダウンを使用して、いつでも変換元または変換先の単位を変更できます。<strong class="text-ink">⇄入れ替えボタン</strong>をタップして、変換方向をすばやく逆にします。`,
+      `<strong class="text-ink">コピー</strong>を押すと、結果のステートメント全体がクリップボードにコピーされ、どこにでも貼り付けられるようになります。`
+    ]
+  };
+  return templates[loc] || templates['en'];
+};
+const howToUseParagraphs = getLocalizedHowToUse(localizedTitle, locale);
+
+const getLocalizedProTip = (loc: string) => {
+  const templates: Record<string, string> = {
+    'en': 'You can type decimal values (e.g. <code class="font-mono bg-primary/10 px-1 py-0.5 rounded text-primary">2.54</code>) or very large numbers. The converter handles any numeric input automatically.',
+    'es': 'Puede ingresar valores decimales (por ejemplo, <code class="font-mono bg-primary/10 px-1 py-0.5 rounded text-primary">2.54</code>) o números muy grandes. El conversor maneja cualquier entrada numérica automáticamente.',
+    'hi': 'आप दशमलव मान (जैसे <code class="font-mono bg-primary/10 px-1 py-0.5 rounded text-primary">2.54</code>) या बहुत बड़ी संख्याएँ टाइप कर सकते हैं। कनवर्टर किसी भी संख्यात्मक इनपुट को स्वचालित रूप से संभालता है।',
+    'fr': 'Vous pouvez saisir des valeurs décimales (par exemple <code class="font-mono bg-primary/10 px-1 py-0.5 rounded text-primary">2.54</code>) ou de très grands nombres. Le convertisseur gère automatiquement toute entrée numérique.',
+    'pt': 'Você pode digitar valores decimais (por exemplo, <code class="font-mono bg-primary/10 px-1 py-0.5 rounded text-primary">2.54</code>) ou números muito grandes. O conversor lida com qualquer entrada numérica automaticamente.',
+    'de': 'Sie können Dezimalwerte (z. B. <code class="font-mono bg-primary/10 px-1 py-0.5 rounded text-primary">2.54</code>) oder sehr große Zahlen eingeben. Der Umrechner verarbeitet jede numerische Eingabe automatisch.',
+    'ar': 'يمكنك كتابة قيم عشرية (مثل <code class="font-mono bg-primary/10 px-1 py-0.5 rounded text-primary">2.54</code>) أو أرقام كبيرة جدًا. يتعامل المحول مع أي إدخال عددي تلقائيًا.',
+    'ja': '小数値（例：<code class="font-mono bg-primary/10 px-1 py-0.5 rounded text-primary">2.54</code>）や非常に大きな数値を入力できます。コンバーターは任意の数値入力を自動的に処理します。'
+  };
+  return templates[loc] || templates['en'];
+};
+const localizedProTip = getLocalizedProTip(locale);
+
+const getLocalizedRefTableTitle = (tVal: string, loc: string) => {
+  const templates: Record<string, string> = {
+    'en': `${tVal} Reference Table`,
+    'es': `Tabla de referencia de ${tVal}`,
+    'hi': `${tVal} संदर्भ तालिका`,
+    'fr': `Tableau de référence de ${tVal}`,
+    'pt': `Tabela de referência de ${tVal}`,
+    'de': `${tVal}-Referenztabelle`,
+    'ar': `جدول مرجعي لـ ${tVal}`,
+    'ja': `${tVal}基準表`
+  };
+  return templates[loc] || templates['en'];
+};
+const localizedRefTableTitle = getLocalizedRefTableTitle(localizedTitle, locale);
+
+const getLocalizedHref = (url: string) => {
+  if (locale === 'en') return url;
+  if (url.startsWith(`/${locale}`)) return url;
+  return `/${locale}${url}`;
+};
+
+const getLocalizedPopularLinkLabel = (pLabel: string, pHref: string) => {
+  const parts = pHref.split('/');
+  const slugVal = parts[parts.length - 1]; // e.g. 1-inch-to-cm
+  const match = slugVal.match(/^(\d+)-(.*)$/);
+  if (match) {
+    const val = match[1];
+    const routeSlug = match[2];
+    return `${val} ${translatePopularRoute(routeSlug, locale, pLabel)}`;
+  }
+  return pLabel;
+};
 
 // Serialize unit definitions to JSON for client-side JS
-const unitsJson   = JSON.stringify(units);
+const unitsJson   = JSON.stringify(localizedUnits);
 const categoryJson = JSON.stringify({ slug, label: converterDef?.label || title, isBinary: slug === 'binary' });
+
+let historicalRates = {};
+if (slug === 'currency') {
+  historicalRates = await fetchHistoricalRates();
+}
+const historicalRatesJson = JSON.stringify(historicalRates);
+
+const btnCopyText = t('btn_copy', locale);
+const btnCopiedText = t('btn_copied', locale);
+const btnSaveFavoriteText = t('btn_save_favorite', locale);
+const btnSavedText = t('btn_saved', locale);
+const siDescriptionText = t('si_description', locale);
+const formulaMultiplyTemplate = t('formula_multiply', locale) || 'Formula: multiply by {factor}';
+
+// Define pairs for internal link generation
+const seoPairs = [
+  { from: 'inch', to: 'centimeter', fromUrl: 'inch', toUrl: 'cm', label: 'Inch to CM', category: 'length' },
+  { from: 'centimeter', to: 'inch', fromUrl: 'cm', toUrl: 'inch', label: 'CM to Inch', category: 'length' },
+  { from: 'mile', to: 'kilometer', fromUrl: 'mile', toUrl: 'km', label: 'Mile to KM', category: 'length' },
+  { from: 'kilometer', to: 'mile', fromUrl: 'km', toUrl: 'mile', label: 'KM to Mile', category: 'length' },
+  { from: 'foot', to: 'meter', fromUrl: 'feet', toUrl: 'meters', label: 'Feet to Meters', category: 'length' },
+  { from: 'meter', to: 'foot', fromUrl: 'meters', toUrl: 'feet', label: 'Meters to Feet', category: 'length' },
+  { from: 'yard', to: 'meter', fromUrl: 'yards', toUrl: 'meters', label: 'Yards to Meters', category: 'length' },
+  { from: 'foot', to: 'inch', fromUrl: 'feet', toUrl: 'inches', label: 'Feet to Inches', category: 'length' },
+  
+  { from: 'kilogram', to: 'pound', fromUrl: 'kg', toUrl: 'lbs', label: 'KG to Pounds', category: 'weight-mass' },
+  { from: 'pound', to: 'kilogram', fromUrl: 'lbs', toUrl: 'kg', label: 'Pounds to KG', category: 'weight-mass' },
+  { from: 'gram', to: 'ounce', fromUrl: 'grams', toUrl: 'oz', label: 'Grams to Ounces', category: 'weight-mass' },
+  { from: 'ounce', to: 'gram', fromUrl: 'oz', toUrl: 'grams', label: 'Ounces to Grams', category: 'weight-mass' },
+  
+  { from: 'celsius', to: 'fahrenheit', fromUrl: 'celsius', toUrl: 'fahrenheit', label: 'Celsius to Fahrenheit', category: 'temperature' },
+  { from: 'fahrenheit', to: 'celsius', fromUrl: 'fahrenheit', toUrl: 'celsius', label: 'Fahrenheit to Celsius', category: 'temperature' },
+  
+  { from: 'liter', to: 'gallon-us', fromUrl: 'liters', toUrl: 'gallons', label: 'Liters to Gallons', category: 'volume' },
+  { from: 'gallon-us', to: 'liter', fromUrl: 'gallons', toUrl: 'liters', label: 'Gallons to Liters', category: 'volume' },
+  { from: 'milliliter', to: 'fluid-ounce-us', fromUrl: 'ml', toUrl: 'fluid-ounces', label: 'ML to Fluid Ounces', category: 'volume' },
+  
+  { from: 'square-foot', to: 'square-meter', fromUrl: 'square-feet', toUrl: 'square-meters', label: 'Square Feet to Square Meters', category: 'area' },
+  { from: 'square-meter', to: 'square-foot', fromUrl: 'square-meters', toUrl: 'square-feet', label: 'Square Meters to Square Feet', category: 'area' },
+  { from: 'acre', to: 'square-meter', fromUrl: 'acres', toUrl: 'square-meters', label: 'Acres to Square Meters', category: 'area' },
+  
+  { from: 'kmh', to: 'mph', fromUrl: 'kmh', toUrl: 'mph', label: 'KM/H to MPH', category: 'speed' },
+  { from: 'mph', to: 'kmh', fromUrl: 'mph', toUrl: 'kmh', label: 'MPH to KM/H', category: 'speed' },
+  
+  { from: 'hour', to: 'minute', fromUrl: 'hours', toUrl: 'minutes', label: 'Hours to Minutes', category: 'time' },
+  { from: 'minute', to: 'second', fromUrl: 'minutes', toUrl: 'seconds', label: 'Minutes to Seconds', category: 'time' },
+  
+  { from: 'gigabyte', to: 'megabyte', fromUrl: 'gb', toUrl: 'mb', label: 'GB to MB', category: 'data-storage' },
+  { from: 'terabyte', to: 'gigabyte', fromUrl: 'tb', toUrl: 'gb', label: 'TB to GB', category: 'data-storage' },
+  
+  { from: 'kilowatt', to: 'horsepower', fromUrl: 'kw', toUrl: 'hp', label: 'KW to HP', category: 'power' },
+  { from: 'horsepower', to: 'kilowatt', fromUrl: 'hp', toUrl: 'kw', label: 'HP to KW', category: 'power' }
+];
+
+const seoValues = [1, 5, 10, 50, 100];
+const matchedSeoLinks: any[] = [];
+seoPairs.filter(p => p.category === slug).forEach(p => {
+  seoValues.forEach(val => {
+    matchedSeoLinks.push({
+      href: `/convert/${val}-${p.fromUrl}-to-${p.toUrl}`,
+      label: `${val} ${p.label}`
+    });
+  });
+});
 ---
 
-<Layout title={`${title} — Free Online ${categoryTitle}`} description={description}>
+<Layout title={`${localizedTitle} — Free Online ${localizedCategoryTitle}`} description={localizedDescription}>
   <div class="max-w-6xl mx-auto py-6 sm:py-10 md:py-16 px-4">
 
     <!-- ── Breadcrumbs ──────────────────────────────────────────────────────── -->
     <nav class="flex items-center gap-1.5 sm:gap-2 mb-5 sm:mb-6 text-[10px] sm:text-[11px] font-mono text-mute uppercase tracking-widest overflow-x-auto no-scrollbar whitespace-nowrap pb-1" aria-label="Breadcrumb">
-      <a href="/" class="hover:text-ink transition-colors">Home</a>
+      <a href={getLocalizedHref("/")} class="hover:text-ink transition-colors">{t('nav_home', locale)}</a>
       <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
-      <span class="text-body">{categoryTitle}</span>
+      <span class="text-body">{localizedCategoryTitle}</span>
       <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
-      <span class="text-ink font-semibold">{title}</span>
+      <span class="text-ink font-semibold">{localizedTitle}</span>
     </nav>
 
     <!-- ── Page Header ─────────────────────────────────────────────────────── -->
     <header class="mb-7 sm:mb-10">
-      <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-[-0.04em] text-ink mb-3 sm:mb-4 leading-tight">{title}</h1>
-      <p class="text-body max-w-2xl leading-relaxed text-sm">{description}</p>
+      <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-[-0.04em] text-ink mb-3 sm:mb-4 leading-tight">{localizedTitle}</h1>
+      <p class="text-body max-w-2xl leading-relaxed text-sm">{localizedDescription}</p>
     </header>
 
     <!-- ── Converter Card ──────────────────────────────────────────────────── -->
@@ -117,7 +526,7 @@ const categoryJson = JSON.stringify({ slug, label: converterDef?.label || title,
 
           <!-- From -->
           <div class="space-y-3">
-            <label class="text-[11px] font-semibold font-mono text-mute uppercase tracking-wider">From</label>
+            <label class="text-[11px] font-semibold font-mono text-mute uppercase tracking-wider">{t('card_from', locale)}</label>
             <div class="flex flex-col gap-3">
               <input
                 id="from-input"
@@ -129,7 +538,7 @@ const categoryJson = JSON.stringify({ slug, label: converterDef?.label || title,
               />
               <Dropdown 
                 id="from-dropdown"
-                options={units}
+                options={localizedUnits}
                 selected={defaultFrom}
               />
             </div>
@@ -148,7 +557,7 @@ const categoryJson = JSON.stringify({ slug, label: converterDef?.label || title,
 
           <!-- To -->
           <div class="space-y-3">
-            <label class="text-[11px] font-semibold font-mono text-mute uppercase tracking-wider">To</label>
+            <label class="text-[11px] font-semibold font-mono text-mute uppercase tracking-wider">{t('card_to', locale)}</label>
             <div class="flex flex-col gap-3">
               <input
                 id="to-input"
@@ -160,7 +569,7 @@ const categoryJson = JSON.stringify({ slug, label: converterDef?.label || title,
               />
               <Dropdown 
                 id="to-dropdown"
-                options={units}
+                options={localizedUnits}
                 selected={defaultTo}
               />
             </div>
@@ -170,7 +579,7 @@ const categoryJson = JSON.stringify({ slug, label: converterDef?.label || title,
 
         <!-- Result summary -->
         <div class="mt-7 sm:mt-10 pt-6 sm:pt-8 border-t border-hairline flex flex-col items-center text-center">
-          <div class="text-[11px] font-mono text-mute uppercase tracking-widest mb-2">Result</div>
+          <div class="text-[11px] font-mono text-mute uppercase tracking-widest mb-2">{t('card_result', locale)}</div>
           <div id="result-summary" class="text-base sm:text-xl md:text-2xl font-bold text-ink mb-1 break-all">
             1 {fromUnit?.symbol ?? fromUnit?.label} = {initialResult} {toUnit?.symbol ?? toUnit?.label}
           </div>
@@ -179,19 +588,201 @@ const categoryJson = JSON.stringify({ slug, label: converterDef?.label || title,
       </div>
 
       <!-- Card Footer -->
-      <div class="bg-canvas-soft-2 px-4 sm:px-6 py-3 sm:py-3.5 border-t border-hairline flex items-center justify-between text-xs text-mute font-medium gap-3 sm:gap-4">
+      <div class="bg-canvas-soft-2 px-4 sm:px-6 py-3 sm:py-3.5 border-t border-hairline flex items-center justify-between text-xs text-mute font-medium gap-3 sm:gap-4 font-sans">
         <div class="flex items-center gap-2 min-w-0">
           <Icon name="hugeicons:information-circle" class="w-4 h-4 shrink-0" />
-          <span id="formula-display" class="truncate">All conversions use industry-standard SI factors.</span>
+          <span id="formula-display" class="truncate">{t('si_description', locale)}</span>
         </div>
-        <button
-          id="copy-btn"
-          aria-label="Copy result"
-          class="flex items-center gap-1.5 hover:text-ink transition-colors shrink-0 touch-manipulation min-h-[36px] px-2"
-        >
-          <Icon name="hugeicons:copy-01" class="w-3.5 h-3.5" />
-          <span id="copy-label">Copy</span>
-        </button>
+        <div class="flex items-center gap-1 sm:gap-2 shrink-0">
+          <button
+            id="favorite-btn"
+            aria-label="Save Favorite"
+            class="flex items-center gap-1.5 hover:text-ink transition-colors shrink-0 touch-manipulation min-h-[36px] px-2 cursor-pointer select-none font-sans"
+          >
+            <span id="favorite-icon-container" class="shrink-0 flex items-center justify-center">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+            </span>
+            <span id="favorite-label">{t('btn_save_favorite', locale)}</span>
+          </button>
+          
+          <span class="text-hairline shrink-0">|</span>
+
+          <button
+            id="copy-btn"
+            aria-label="Copy result"
+            class="flex items-center gap-1.5 hover:text-ink transition-colors shrink-0 touch-manipulation min-h-[36px] px-2 cursor-pointer font-sans"
+          >
+            <Icon name="hugeicons:copy-01" class="w-3.5 h-3.5" />
+            <span id="copy-label">{t('btn_copy', locale)}</span>
+          </button>
+
+          <span class="text-hairline shrink-0">|</span>
+
+          <button
+            id="copy-link-btn"
+            aria-label="Copy share link"
+            class="flex items-center gap-1.5 hover:text-ink transition-colors shrink-0 touch-manipulation min-h-[36px] px-2 cursor-pointer font-sans"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+            </svg>
+            <span class="hidden sm:inline">{t('btn_copy_link', locale)}</span>
+            <span class="sm:hidden">{t('btn_copy_link', locale).split(' ').pop()}</span>
+          </button>
+
+          <span class="text-hairline shrink-0">|</span>
+
+          <button
+            id="share-btn"
+            aria-label="Share conversion"
+            class="flex items-center gap-1.5 hover:text-ink transition-colors shrink-0 touch-manipulation min-h-[36px] px-2 cursor-pointer font-sans"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5">
+              <circle cx="18" cy="5" r="3"/>
+              <circle cx="6" cy="12" r="3"/>
+              <circle cx="18" cy="19" r="3"/>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+            <span>{t('btn_share', locale)}</span>
+          </button>
+
+          <span class="text-hairline shrink-0">|</span>
+
+          <button
+            id="tweet-btn"
+            aria-label="Tweet conversion"
+            class="flex items-center gap-1.5 hover:text-ink transition-colors shrink-0 touch-manipulation min-h-[36px] px-2 cursor-pointer font-sans"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+            </svg>
+            <span class="hidden sm:inline">{t('btn_tweet', locale)}</span>
+            <span class="sm:hidden">{t('btn_tweet', locale).split(' ').shift()}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    {slug === 'currency' && (
+      <CurrencyDashboard fromUnitKey={defaultFrom} toUnitKey={defaultTo} />
+    )}
+
+    <!-- ── Fallback Share Modal ──────────────────────────────────────────────── -->
+    <div
+      id="share-modal"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="share-modal-title"
+    >
+      <div class="bg-canvas border border-hairline w-full max-w-sm rounded-md shadow-2xl p-5 sm:p-6 transform scale-95 transition-transform duration-200 flex flex-col">
+        <div class="flex items-center justify-between mb-4">
+          <h3 id="share-modal-title" class="text-sm sm:text-base font-semibold text-ink">{t('modal_share_title', locale)}</h3>
+          <button
+            id="close-share-btn"
+            aria-label="Close modal"
+            class="p-1 text-mute hover:text-ink hover:bg-canvas-soft-2 rounded transition-all cursor-pointer flex items-center justify-center"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-center">
+          <button
+            id="modal-copy-link-btn"
+            class="flex flex-col items-center justify-center gap-1.5 p-3 rounded-sm border border-hairline bg-canvas hover:bg-canvas-soft-2 transition-all text-xs font-medium text-ink active:scale-[0.98] cursor-pointer"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+            </svg>
+            <span>{t('btn_copy_link', locale)}</span>
+          </button>
+
+          <a
+            id="modal-whatsapp-btn"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex flex-col items-center justify-center gap-1.5 p-3 rounded-sm border border-hairline bg-canvas hover:bg-canvas-soft-2 transition-all text-xs font-medium text-ink active:scale-[0.98] cursor-pointer"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-[#25D366]">
+              <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.725-1.455L0 24zm6.59-4.846c1.6.95 3.178 1.451 4.795 1.452 5.568 0 10.1-4.529 10.104-10.096.002-2.699-1.045-5.234-2.951-7.14C16.591 1.464 14.07 .417 11.38.417 5.814.417 1.282 4.948 1.278 10.517c0 1.696.447 3.355 1.298 4.818L1.64 21.05l5.007-1.312zM17.433 14.37c-.318-.16-1.884-.93-2.176-1.036-.291-.106-.503-.16-.715.16-.212.32-.821 1.036-1.006 1.248-.185.213-.37.24-.689.08-1.556-.78-2.73-1.354-3.805-3.2-.284-.488.284-.452.812-1.507.086-.172.043-.324-.021-.452-.064-.128-.503-1.218-.689-1.669-.181-.437-.365-.377-.503-.384-.13-.006-.278-.008-.425-.008s-.386.054-.588.273c-.201.218-.768.75-.768 1.83 0 1.08.784 2.12.895 2.27.111.15 1.543 2.356 3.738 3.303 1.864.805 2.536.852 3.447.717.382-.057 1.176-.481 1.341-.945.166-.464.166-.862.117-.945-.049-.082-.18-.13-.497-.29z"/>
+            </svg>
+            <span>WhatsApp</span>
+          </a>
+
+          <a
+            id="modal-twitter-btn"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex flex-col items-center justify-center gap-1.5 p-3 rounded-sm border border-hairline bg-canvas hover:bg-canvas-soft-2 transition-all text-xs font-medium text-ink active:scale-[0.98] cursor-pointer"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-ink">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+            </svg>
+            <span>Twitter / X</span>
+          </a>
+
+          <a
+            id="modal-facebook-btn"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex flex-col items-center justify-center gap-1.5 p-3 rounded-sm border border-hairline bg-canvas hover:bg-canvas-soft-2 transition-all text-xs font-medium text-ink active:scale-[0.98] cursor-pointer"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-[#1877F2]">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+            <span>Facebook</span>
+          </a>
+
+          <a
+            id="modal-telegram-btn"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex flex-col items-center justify-center gap-1.5 p-3 rounded-sm border border-hairline bg-canvas hover:bg-canvas-soft-2 transition-all text-xs font-medium text-ink active:scale-[0.98] cursor-pointer"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-[#0088cc]">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-1-.65-.35-1 .22-1.6.15-.15 2.76-2.53 2.81-2.75.01-.03.01-.14-.06-.2-.07-.06-.17-.04-.25-.02-.11.02-1.87 1.18-5.29 3.48-.5.35-.96.52-1.37.51-.45-.01-1.32-.26-1.97-.47-.8-.26-1.42-.4-1.37-.85.03-.23.34-.47.95-.72 3.71-1.61 6.19-2.67 7.42-3.18 3.53-1.45 4.26-1.7 4.74-1.7.1 0 .34.03.49.16.12.1.16.24.18.34.02.1.03.23.01.34z"/>
+            </svg>
+            <span>Telegram</span>
+          </a>
+
+          <a
+            id="modal-linkedin-btn"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex flex-col items-center justify-center gap-1.5 p-3 rounded-sm border border-hairline bg-canvas hover:bg-canvas-soft-2 transition-all text-xs font-medium text-ink active:scale-[0.98] cursor-pointer"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-[#0A66C2]">
+              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.225 0h.003z"/>
+            </svg>
+            <span>LinkedIn</span>
+          </a>
+
+          <!-- Email Option -->
+          <a
+            id="modal-email-btn"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="col-span-2 flex items-center justify-center gap-2.5 p-3 rounded-sm border border-hairline bg-canvas hover:bg-canvas-soft-2 transition-all text-xs font-semibold text-ink active:scale-[0.98] cursor-pointer"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <polyline points="22,6 12,13 2,6"/>
+            </svg>
+            <span>Email</span>
+          </a>
+        </div>
+      </div>
+    </div>
+        </div>
       </div>
     </div>
 
@@ -203,19 +794,11 @@ const categoryJson = JSON.stringify({ slug, label: converterDef?.label || title,
 
         <!-- How to use -->
         <section>
-          <h2 class="text-xl font-semibold text-ink mb-4">How to Use the {title}</h2>
+          <h2 class="text-xl font-semibold text-ink mb-4">{t('how_to_use', locale)} {localizedTitle}</h2>
           <div class="space-y-3 text-body text-sm leading-relaxed">
-            <p>
-              Enter any numerical value in the <strong class="text-ink">From</strong> field on the left.
-              The result appears instantly in the <strong class="text-ink">To</strong> field — no button click required.
-            </p>
-            <p>
-              Use the dropdowns to change the source or target unit at any time.
-              Tap the <strong class="text-ink">⇄ swap button</strong> to quickly reverse the conversion direction.
-            </p>
-            <p>
-              Press <strong class="text-ink">Copy</strong> to copy the full result statement to your clipboard, ready to paste anywhere.
-            </p>
+            {howToUseParagraphs.map(p => (
+              <p set:html={p} />
+            ))}
           </div>
         </section>
 
@@ -223,16 +806,16 @@ const categoryJson = JSON.stringify({ slug, label: converterDef?.label || title,
         {refTable.length > 0 && (
           <section>
             <h2 class="text-xl font-semibold text-ink mb-4">
-              Common {title} Reference Table
+              {localizedRefTableTitle}
             </h2>
             <div class="overflow-x-auto rounded-md border border-hairline -mx-4 sm:mx-0">
               <table class="w-full text-left text-sm border-collapse">
                 <thead>
                   <tr class="bg-canvas-soft-2">
-                    <th class="px-4 py-3 font-semibold text-ink border-b border-hairline">Input</th>
-                    <th class="px-4 py-3 font-semibold text-ink border-b border-hairline">Unit</th>
-                    <th class="px-4 py-3 font-semibold text-ink border-b border-hairline">Result</th>
-                    <th class="px-4 py-3 font-semibold text-ink border-b border-hairline">Target</th>
+                    <th class="px-4 py-3 font-semibold text-ink border-b border-hairline">{t('table_input', locale)}</th>
+                    <th class="px-4 py-3 font-semibold text-ink border-b border-hairline">{t('table_unit', locale)}</th>
+                    <th class="px-4 py-3 font-semibold text-ink border-b border-hairline">{t('card_result', locale)}</th>
+                    <th class="px-4 py-3 font-semibold text-ink border-b border-hairline">{t('table_target', locale)}</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-hairline">
@@ -252,9 +835,9 @@ const categoryJson = JSON.stringify({ slug, label: converterDef?.label || title,
 
         <!-- All units list -->
         <section>
-          <h2 class="text-xl font-semibold text-ink mb-4">Supported Units</h2>
+          <h2 class="text-xl font-semibold text-ink mb-4">{t('supported_units', locale)}</h2>
           <div class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
-            {units.map(unit => (
+            {localizedUnits.map(unit => (
               <div class="flex items-center gap-3 p-3 bg-canvas-soft rounded-md border border-hairline">
                 <span class="text-xs font-mono font-bold text-primary bg-primary/8 px-2 py-0.5 rounded min-w-[2.5rem] text-center">
                   {unit.symbol || '—'}
@@ -264,6 +847,23 @@ const categoryJson = JSON.stringify({ slug, label: converterDef?.label || title,
             ))}
           </div>
         </section>
+
+        {matchedSeoLinks.length > 0 && (
+          <section class="pt-8 border-t border-hairline">
+            <h2 class="text-xl font-semibold text-ink mb-4">{t('nav_popular', locale)}</h2>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {matchedSeoLinks.map(link => (
+                <a
+                  href={getLocalizedHref(link.href)}
+                  class="flex items-center gap-1.5 p-2.5 bg-canvas rounded-md border border-hairline hover:bg-canvas-soft hover:border-hairline-strong transition-all text-xs font-semibold text-link"
+                >
+                  <Icon name="hugeicons:arrow-right-01" class="w-3.5 h-3.5 shrink-0 text-mute" />
+                  <span class="truncate">{getLocalizedPopularLinkLabel(link.label, link.href)}</span>
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
 
       <!-- Sidebar -->
@@ -271,7 +871,7 @@ const categoryJson = JSON.stringify({ slug, label: converterDef?.label || title,
 
         <!-- FAQ -->
         <div class="p-6 bg-canvas border border-hairline rounded-md">
-          <h3 class="text-base font-semibold text-ink mb-5">Frequently Asked Questions</h3>
+          <h3 class="text-base font-semibold text-ink mb-5">{t('title_faq', locale)}</h3>
           <div class="space-y-5">
             {faq.map(item => (
               <div>
@@ -284,25 +884,22 @@ const categoryJson = JSON.stringify({ slug, label: converterDef?.label || title,
 
         <!-- Pro tip -->
         <div class="p-5 bg-primary/5 border border-primary/15 rounded-md">
-          <h3 class="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Pro Tip</h3>
-          <p class="text-xs text-ink/70 leading-relaxed">
-            You can type decimal values (e.g. <code class="font-mono bg-primary/10 px-1 py-0.5 rounded text-primary">2.54</code>)
-            or very large numbers. The converter handles any numeric input automatically.
-          </p>
+          <h3 class="text-xs font-semibold text-primary uppercase tracking-wider mb-2">{t('pro_tip', locale)}</h3>
+          <p class="text-xs text-ink/70 leading-relaxed" set:html={localizedProTip} />
         </div>
 
         <!-- Related converters -->
         <div class="p-5 bg-canvas border border-hairline rounded-md">
-          <h3 class="text-base font-semibold text-ink mb-4">Related Converters</h3>
+          <h3 class="text-base font-semibold text-ink mb-4">{t('related_converters', locale)}</h3>
           <ul class="space-y-2">
             {converterCategories.slice(0, 8).filter(c => c.slug !== slug).slice(0, 6).map(c => (
               <li>
                 <a
-                  href={`/unit-converters/${c.slug}`}
+                  href={getLocalizedHref(`/unit-converters/${c.slug}`)}
                   class="text-xs text-link hover:underline flex items-center gap-1.5"
                 >
                   <Icon name="hugeicons:arrow-right-01" class="w-3 h-3 shrink-0" />
-                  {c.label}
+                  {translateCategory(c.slug, locale)}
                 </a>
               </li>
             ))}
@@ -310,17 +907,75 @@ const categoryJson = JSON.stringify({ slug, label: converterDef?.label || title,
         </div>
       </aside>
     </div>
+
+    <LearnSection slug={slug} categoryTitle={localizedCategoryTitle} title={localizedTitle} units={localizedUnits} />
   </div>
 </Layout>
 
 <!-- ─────────────────────────────────────────────────────────────────────────── -->
 <!-- Client-side Conversion Engine (Vanilla JS — no framework dependency)       -->
 <!-- ─────────────────────────────────────────────────────────────────────────── -->
-<script define:vars={{ unitsJson, categoryJson, defaultFrom, defaultTo, initialResult }}>
+<script define:vars={{ unitsJson, categoryJson, defaultFrom, defaultTo, initialResult, historicalRatesJson, btnCopyText, btnCopiedText, btnSaveFavoriteText, btnSavedText, siDescriptionText, formulaMultiplyTemplate }}>
 
 // ── Parse server-side data ────────────────────────────────────────────────────
 const UNITS    = JSON.parse(unitsJson);
 const CATEGORY = JSON.parse(categoryJson);
+const HISTORICAL_RATES = JSON.parse(historicalRatesJson);
+
+// ── Favorites localStorage helpers (inline to bypass load-timing delay) ────────
+const FAVORITES_STORAGE_KEY = 'realunitconverter_favorites';
+
+function getFavorites() {
+  try {
+    const raw = localStorage.getItem(FAVORITES_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveFavorites(items) {
+  try {
+    localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(items));
+  } catch (e) {}
+}
+
+function isFavoriteMeasurement(converterType, inputValue, fromUnit, outputValue, toUnit) {
+  const items = getFavorites();
+  return items.some(item => 
+    item.converterType.toLowerCase() === converterType.toLowerCase() &&
+    item.inputValue.trim() === inputValue.trim() &&
+    item.fromUnit.toLowerCase() === fromUnit.toLowerCase() &&
+    item.outputValue.trim() === outputValue.trim() &&
+    item.toUnit.toLowerCase() === toUnit.toLowerCase()
+  );
+}
+
+function toggleFavoriteMeasurement(item) {
+  const items = getFavorites();
+  const existingIndex = items.findIndex(fav => 
+    fav.converterType.toLowerCase() === item.converterType.toLowerCase() &&
+    fav.inputValue.trim() === item.inputValue.trim() &&
+    fav.fromUnit.toLowerCase() === item.fromUnit.toLowerCase() &&
+    fav.outputValue.trim() === item.outputValue.trim() &&
+    fav.toUnit.toLowerCase() === item.toUnit.toLowerCase()
+  );
+
+  if (existingIndex !== -1) {
+    items.splice(existingIndex, 1);
+    saveFavorites(items);
+    return false;
+  } else {
+    const newItem = {
+      ...item,
+      id: `fav_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: Date.now()
+    };
+    items.unshift(newItem);
+    saveFavorites(items);
+    return true;
+  }
+}
 
 // ── DOM refs ─────────────────────────────────────────────────────────────────
 const fromInput    = document.getElementById('from-input');
@@ -332,6 +987,23 @@ const copyBtn      = document.getElementById('copy-btn');
 const copyLabel    = document.getElementById('copy-label');
 const resultSummary  = document.getElementById('result-summary');
 const formulaDisplay = document.getElementById('formula-display');
+const favoriteBtn = document.getElementById('favorite-btn');
+const favoriteIconContainer = document.getElementById('favorite-icon-container');
+const favoriteLabel = document.getElementById('favorite-label');
+const copyLinkBtn  = document.getElementById('copy-link-btn');
+const shareBtn     = document.getElementById('share-btn');
+const tweetBtn     = document.getElementById('tweet-btn');
+
+// Fallback Share Modal refs
+const shareModal = document.getElementById('share-modal');
+const closeShareBtn = document.getElementById('close-share-btn');
+const modalCopyLinkBtn = document.getElementById('modal-copy-link-btn');
+const modalWhatsappBtn = document.getElementById('modal-whatsapp-btn');
+const modalTwitterBtn = document.getElementById('modal-twitter-btn');
+const modalFacebookBtn = document.getElementById('modal-facebook-btn');
+const modalTelegramBtn = document.getElementById('modal-telegram-btn');
+const modalLinkedinBtn = document.getElementById('modal-linkedin-btn');
+const modalEmailBtn    = document.getElementById('modal-email-btn');
 
 function getDropdownValue(dropdown) {
   return dropdown.getAttribute('data-value') || '';
@@ -555,15 +1227,70 @@ function updateConversion() {
   if (fromUnit?.factor && toUnit?.factor && CATEGORY.slug !== 'temperature' && CATEGORY.slug !== 'fuel-consumption') {
     const factor = fromUnit.factor / toUnit.factor;
     const formatted = parseFloat(factor.toFixed(8)).toString();
-    formulaDisplay.textContent = `Formula: multiply by ${formatted}`;
+    formulaDisplay.textContent = formulaMultiplyTemplate.replace('{factor}', formatted);
   } else {
-    formulaDisplay.textContent = 'All conversions use industry-standard SI factors.';
+    formulaDisplay.textContent = siDescriptionText;
   }
 
   // Auto save conversion to history
   const fromName = fromUnit?.label || fromKey;
   const toName = toUnit?.label || toKey;
   scheduleHistorySave(rawValue, displayResult, fromName, toName);
+
+  if (typeof updateFavoriteButtonState === 'function') {
+    updateFavoriteButtonState();
+  }
+
+  if (CATEGORY.slug === 'currency' && typeof updateCurrencyDashboard === 'function') {
+    updateCurrencyDashboard(fromKey, toKey);
+  }
+}
+
+// ── Favorites Logic ─────────────────────────────────────────────────────────
+function updateFavoriteButtonState() {
+  if (!favoriteBtn) return;
+  const rawValue = fromInput.value.trim();
+  const fromKey = getDropdownValue(fromDropdown);
+  const toKey = getDropdownValue(toDropdown);
+  const fromUnit = unitMap[fromKey];
+  const toUnit = unitMap[toKey];
+
+  if (rawValue === '' || rawValue === '-' || toInput.value === '' || toInput.value === 'Invalid' || toInput.value === '—') {
+    favoriteBtn.style.opacity = '0.5';
+    favoriteBtn.style.pointerEvents = 'none';
+    return;
+  }
+
+  favoriteBtn.style.opacity = '1';
+  favoriteBtn.style.pointerEvents = 'auto';
+
+  const fromName = fromUnit?.label || fromKey;
+  const toName = toUnit?.label || toKey;
+  const displayResult = toInput.value;
+
+  const saved = isFavoriteMeasurement(
+    CATEGORY.label.replace(" Converter", "").replace(" & Mass", "").trim(),
+    rawValue,
+    fromName,
+    displayResult,
+    toName
+  );
+
+  if (saved) {
+    favoriteIconContainer.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 text-amber-500 transition-transform duration-200">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+    `;
+    favoriteLabel.textContent = btnSavedText;
+  } else {
+    favoriteIconContainer.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 transition-transform duration-200">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+    `;
+    favoriteLabel.textContent = btnSaveFavoriteText;
+  }
 }
 
 // ── Event listeners ───────────────────────────────────────────────────────────
@@ -580,10 +1307,6 @@ swapBtn.addEventListener('click', () => {
   setDropdownValue(fromDropdown, toKey);
   setDropdownValue(toDropdown, fromKey);
 
-  // Swap input/output
-  const prevResult = toInput.value;
-  fromInput.value  = prevResult !== '—' ? prevResult : fromInput.value;
-
   // Animate swap button
   swapBtn.style.transform = 'rotate(180deg)';
   setTimeout(() => { swapBtn.style.transform = ''; }, 300);
@@ -594,8 +1317,8 @@ swapBtn.addEventListener('click', () => {
 copyBtn.addEventListener('click', () => {
   const text = resultSummary.textContent || toInput.value;
   navigator.clipboard.writeText(text).then(() => {
-    copyLabel.textContent = 'Copied!';
-    setTimeout(() => { copyLabel.textContent = 'Copy'; }, 2000);
+    copyLabel.textContent = btnCopiedText;
+    setTimeout(() => { copyLabel.textContent = btnCopyText; }, 2000);
   }).catch(() => {
     // Fallback for older browsers
     const ta = document.createElement('textarea');
@@ -604,10 +1327,766 @@ copyBtn.addEventListener('click', () => {
     ta.select();
     document.execCommand('copy');
     document.body.removeChild(ta);
-    copyLabel.textContent = 'Copied!';
-    setTimeout(() => { copyLabel.textContent = 'Copy'; }, 2000);
+    copyLabel.textContent = btnCopiedText;
+    setTimeout(() => { copyLabel.textContent = btnCopyText; }, 2000);
   });
 });
+
+if (favoriteBtn) {
+  favoriteBtn.addEventListener('click', () => {
+    const rawValue = fromInput.value.trim();
+    const fromKey = getDropdownValue(fromDropdown);
+    const toKey = getDropdownValue(toDropdown);
+    const fromUnit = unitMap[fromKey];
+    const toUnit = unitMap[toKey];
+
+    if (rawValue === '' || rawValue === '-' || toInput.value === '' || toInput.value === 'Invalid' || toInput.value === '—') {
+      return;
+    }
+
+    const fromName = fromUnit?.label || fromKey;
+    const toName = toUnit?.label || toKey;
+    const displayResult = toInput.value;
+
+    toggleFavoriteMeasurement({
+      converterType: CATEGORY.label.replace(" Converter", "").replace(" & Mass", "").trim(),
+      inputValue: rawValue,
+      fromUnit: fromName,
+      outputValue: displayResult,
+      toUnit: toName
+    });
+
+    const starSvg = favoriteIconContainer.querySelector('svg');
+    if (starSvg) {
+      starSvg.classList.add('scale-125');
+      setTimeout(() => { starSvg.classList.remove('scale-125'); }, 200);
+    }
+
+    updateFavoriteButtonState();
+  });
+}
+
+// Toast helper function
+function showToast(message) {
+  const existing = document.getElementById('share-toast');
+  if (existing) {
+    existing.remove();
+  }
+  const toast = document.createElement('div');
+  toast.id = 'share-toast';
+  toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-black text-xs sm:text-sm font-medium py-3 px-6 rounded-md shadow-lg border border-hairline transition-all duration-300 transform translate-y-2 opacity-0 flex items-center gap-2 pointer-events-none';
+  toast.innerHTML = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-emerald-500 shrink-0">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+    <span>${message}</span>
+  `;
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => {
+    toast.classList.remove('translate-y-2', 'opacity-0');
+    toast.classList.add('translate-y-0', 'opacity-100');
+  });
+  setTimeout(() => {
+    toast.classList.remove('translate-y-0', 'opacity-100');
+    toast.classList.add('translate-y-2', 'opacity-0');
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    }, 300);
+  }, 2500);
+}
+
+// Dynamic helper to resolve device type for analytics
+function getDeviceType() {
+  const ua = navigator.userAgent;
+  if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) {
+    return 'tablet';
+  }
+  if (/Mobile|iP(hone|od)|Android|BlackBerry|IEMobile|Kindle|Silk-Accelerated|(hpwOS)/i.test(ua)) {
+    return 'mobile';
+  }
+  return 'desktop';
+}
+
+// Custom Modal open/close logic
+function openShareModal(shareUrl, textVal) {
+  if (!shareModal) return;
+
+  if (modalWhatsappBtn) {
+    modalWhatsappBtn.href = `https://api.whatsapp.com/send?text=${encodeURIComponent('Check out this conversion: ' + textVal + ' ' + shareUrl)}`;
+  }
+  if (modalTwitterBtn) {
+    modalTwitterBtn.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(textVal + ' — converted with RealUnitConverter')}&url=${encodeURIComponent(shareUrl)}`;
+  }
+  if (modalFacebookBtn) {
+    modalFacebookBtn.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+  }
+  if (modalTelegramBtn) {
+    modalTelegramBtn.href = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent('Check out this conversion: ' + textVal)}`;
+  }
+  if (modalLinkedinBtn) {
+    modalLinkedinBtn.href = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+  }
+  if (modalEmailBtn) {
+    modalEmailBtn.href = `mailto:?subject=${encodeURIComponent('Real Unit Converter')}&body=${encodeURIComponent('Check out this conversion: ' + textVal + '\n' + shareUrl)}`;
+  }
+
+  shareModal.classList.remove('hidden');
+  requestAnimationFrame(() => {
+    shareModal.classList.remove('opacity-0');
+    const dialog = shareModal.querySelector('.bg-canvas');
+    if (dialog) {
+      dialog.classList.remove('scale-95');
+      dialog.classList.add('scale-100');
+    }
+  });
+}
+
+function closeShareModal() {
+  if (!shareModal) return;
+  shareModal.classList.add('opacity-0');
+  const dialog = shareModal.querySelector('.bg-canvas');
+  if (dialog) {
+    dialog.classList.remove('scale-100');
+    dialog.classList.add('scale-95');
+  }
+  setTimeout(() => {
+    shareModal.classList.add('hidden');
+  }, 200);
+}
+
+if (closeShareBtn) {
+  closeShareBtn.addEventListener('click', closeShareModal);
+}
+if (shareModal) {
+  shareModal.addEventListener('click', (e) => {
+    if (e.target === shareModal) {
+      closeShareModal();
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !shareModal.classList.contains('hidden')) {
+      closeShareModal();
+    }
+  });
+}
+
+// Feature 1: Copy Link Button Click Handler
+if (copyLinkBtn) {
+  copyLinkBtn.addEventListener('click', () => {
+    try {
+      const rawValue = fromInput.value.trim() || '1';
+      const fromKey = getDropdownValue(fromDropdown);
+      const toKey = getDropdownValue(toDropdown);
+
+      const url = new URL(window.location.origin + window.location.pathname);
+      url.searchParams.set('value', rawValue);
+      url.searchParams.set('from', fromKey);
+      url.searchParams.set('to', toKey);
+      const shareUrl = url.toString();
+
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        showToast('Share link copied successfully');
+      }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = shareUrl;
+        ta.style.position = 'fixed';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand('copy');
+          showToast('Share link copied successfully');
+        } catch (err) {}
+        document.body.removeChild(ta);
+      });
+
+      // Track analytics events
+      if (typeof gtag === 'function') {
+        gtag('event', 'copy_link_clicked', {
+          converter_category: CATEGORY.slug,
+          source_unit: fromKey,
+          destination_unit: toKey,
+          value: rawValue,
+          device_type: getDeviceType()
+        });
+        gtag('event', 'share_link_generated', {
+          converter_category: CATEGORY.slug,
+          source_unit: fromKey,
+          destination_unit: toKey,
+          value: rawValue,
+          device_type: getDeviceType()
+        });
+      }
+    } catch (err) {}
+  });
+}
+
+// Modal Copy Link Click Handler
+if (modalCopyLinkBtn) {
+  modalCopyLinkBtn.addEventListener('click', () => {
+    try {
+      const rawValue = fromInput.value.trim() || '1';
+      const fromKey = getDropdownValue(fromDropdown);
+      const toKey = getDropdownValue(toDropdown);
+
+      const url = new URL(window.location.origin + window.location.pathname);
+      url.searchParams.set('value', rawValue);
+      url.searchParams.set('from', fromKey);
+      url.searchParams.set('to', toKey);
+      const shareUrl = url.toString();
+
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        showToast('Share link copied successfully');
+        closeShareModal();
+      }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = shareUrl;
+        ta.style.position = 'fixed';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand('copy');
+          showToast('Share link copied successfully');
+          closeShareModal();
+        } catch (err) {}
+        document.body.removeChild(ta);
+      });
+
+      if (typeof gtag === 'function') {
+        gtag('event', 'copy_link_clicked', {
+          converter_category: CATEGORY.slug,
+          source_unit: fromKey,
+          destination_unit: toKey,
+          value: rawValue,
+          device_type: getDeviceType()
+        });
+      }
+    } catch (err) {}
+  });
+}
+
+// Fallback modal brand clicks tracking
+const modalSharePlatforms = [
+  { btn: modalWhatsappBtn, label: 'whatsapp' },
+  { btn: modalFacebookBtn, label: 'facebook' },
+  { btn: modalTelegramBtn, label: 'telegram' },
+  { btn: modalLinkedinBtn, label: 'linkedin' },
+  { btn: modalEmailBtn, label: 'email' }
+];
+
+modalSharePlatforms.forEach(p => {
+  if (p.btn) {
+    p.btn.addEventListener('click', () => {
+      try {
+        const rawValue = fromInput.value.trim() || '1';
+        const fromKey = getDropdownValue(fromDropdown);
+        const toKey = getDropdownValue(toDropdown);
+        if (typeof gtag === 'function') {
+          gtag('event', 'share_button_clicked', {
+            converter_category: CATEGORY.slug,
+            source_unit: fromKey,
+            destination_unit: toKey,
+            value: rawValue,
+            platform: p.label,
+            device_type: getDeviceType()
+          });
+        }
+      } catch (err) {}
+    });
+  }
+});
+
+if (modalTwitterBtn) {
+  modalTwitterBtn.addEventListener('click', () => {
+    try {
+      const rawValue = fromInput.value.trim() || '1';
+      const fromKey = getDropdownValue(fromDropdown);
+      const toKey = getDropdownValue(toDropdown);
+      if (typeof gtag === 'function') {
+        gtag('event', 'tweet_button_clicked', {
+          converter_category: CATEGORY.slug,
+          source_unit: fromKey,
+          destination_unit: toKey,
+          value: rawValue,
+          device_type: getDeviceType()
+        });
+      }
+    } catch (err) {}
+  });
+}
+
+// Feature 2: Native Share Button Click Handler
+if (shareBtn) {
+  shareBtn.addEventListener('click', () => {
+    try {
+      const rawValue = fromInput.value.trim() || '1';
+      const fromKey = getDropdownValue(fromDropdown);
+      const toKey = getDropdownValue(toDropdown);
+      const fromUnit = unitMap[fromKey];
+      const toUnit = unitMap[toKey];
+      const toVal = toInput.value || '—';
+
+      const url = new URL(window.location.origin + window.location.pathname);
+      url.searchParams.set('value', rawValue);
+      url.searchParams.set('from', fromKey);
+      url.searchParams.set('to', toKey);
+      const shareUrl = url.toString();
+
+      const fromName = fromUnit?.symbol || fromUnit?.label || fromKey;
+      const toName = toUnit?.symbol || toUnit?.label || toKey;
+      const conversionText = `${rawValue} ${fromName} = ${toVal} ${toName}`;
+
+      // track share link generation
+      if (typeof gtag === 'function') {
+        gtag('event', 'share_button_clicked', {
+          converter_category: CATEGORY.slug,
+          source_unit: fromKey,
+          destination_unit: toKey,
+          value: rawValue,
+          device_type: getDeviceType()
+        });
+        gtag('event', 'share_link_generated', {
+          converter_category: CATEGORY.slug,
+          source_unit: fromKey,
+          destination_unit: toKey,
+          value: rawValue,
+          device_type: getDeviceType()
+        });
+      }
+
+      // Prepare share data
+      const shareData = {
+        title: 'Real Unit Converter',
+        text: `Check out this conversion: ${conversionText}`,
+        url: shareUrl
+      };
+
+      // Validate URL is absolute and valid
+      try {
+        const validatedUrl = new URL(shareUrl);
+        if (!validatedUrl.protocol.startsWith('http')) {
+          throw new Error('Invalid protocol');
+        }
+      } catch (err) {
+        openShareModal(shareUrl, conversionText);
+        return;
+      }
+
+      // Feature detection for Web Share API
+      if (navigator.share) {
+        // If canShare is available, use it for pre-flight validation
+        if (navigator.canShare && !navigator.canShare(shareData)) {
+          openShareModal(shareUrl, conversionText);
+          return;
+        }
+
+        navigator.share(shareData)
+          .then(() => {
+            // Track successful share
+            if (typeof gtag === 'function') {
+              gtag('event', 'share_success', {
+                method: 'native',
+                device_type: getDeviceType()
+              });
+            }
+          })
+          .catch((err) => {
+            // Handle specific errors
+            if (err.name === 'AbortError') {
+              // User cancelled - do nothing
+              return;
+            }
+            
+            // For other errors (NotAllowedError, DataError, etc.), fall back to custom modal
+            openShareModal(shareUrl, conversionText);
+          });
+      } else {
+        // Web Share API not supported
+        openShareModal(shareUrl, conversionText);
+      }
+    } catch (err) {
+      // Fallback in case of any unexpected errors
+      openShareModal(shareUrl, conversionText);
+    }
+  });
+}
+
+// Feature 3: Tweet This Button Click Handler
+if (tweetBtn) {
+  tweetBtn.addEventListener('click', () => {
+    try {
+      const rawValue = fromInput.value.trim() || '1';
+      const fromKey = getDropdownValue(fromDropdown);
+      const toKey = getDropdownValue(toDropdown);
+      const fromUnit = unitMap[fromKey];
+      const toUnit = unitMap[toKey];
+      const toVal = toInput.value || '—';
+
+      const url = new URL(window.location.origin + window.location.pathname);
+      url.searchParams.set('value', rawValue);
+      url.searchParams.set('from', fromKey);
+      url.searchParams.set('to', toKey);
+      const shareUrl = url.toString();
+
+      const fromName = fromUnit?.symbol || fromUnit?.label || fromKey;
+      const toName = toUnit?.symbol || toUnit?.label || toKey;
+      const conversionText = `${rawValue} ${fromName} = ${toVal} ${toName}`;
+      const tweetText = `${conversionText} — converted with RealUnitConverter`;
+
+      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(shareUrl)}`, '_blank', 'noopener,noreferrer');
+
+      // Track events
+      if (typeof gtag === 'function') {
+        gtag('event', 'tweet_button_clicked', {
+          converter_category: CATEGORY.slug,
+          source_unit: fromKey,
+          destination_unit: toKey,
+          value: rawValue,
+          device_type: getDeviceType()
+        });
+        gtag('event', 'share_link_generated', {
+          converter_category: CATEGORY.slug,
+          source_unit: fromKey,
+          destination_unit: toKey,
+          value: rawValue,
+          device_type: getDeviceType()
+        });
+      }
+    } catch (err) {}
+  });
+}
+
+// Helper to look up unit key from label or symbol (case-insensitive)
+function findUnitKey(labelOrSymbol) {
+  if (!labelOrSymbol) return null;
+  let clean = labelOrSymbol.toLowerCase().trim();
+  
+  // Common plural mapping
+  if (clean === 'feet') clean = 'foot';
+  if (clean.endsWith('s') && !UNITS.some(u => u.key.toLowerCase() === clean || (u.symbol && u.symbol.toLowerCase() === clean))) {
+    // Try stripping 's' or 'es'
+    if (clean.endsWith('es')) {
+      const stripped = clean.slice(0, -2);
+      if (UNITS.some(u => u.key.toLowerCase() === stripped || u.label.toLowerCase() === stripped)) {
+        clean = stripped;
+      }
+    } else {
+      const stripped = clean.slice(0, -1);
+      if (UNITS.some(u => u.key.toLowerCase() === stripped || u.label.toLowerCase() === stripped)) {
+        clean = stripped;
+      }
+    }
+  }
+
+  // First search exact key, label, or symbol
+  let found = UNITS.find(u => 
+    u.key.toLowerCase() === clean || 
+    u.label.toLowerCase() === clean || 
+    (u.symbol && u.symbol.toLowerCase() === clean)
+  );
+
+  // If not found, try substring matching
+  if (!found) {
+    found = UNITS.find(u => 
+      u.key.toLowerCase().includes(clean) || 
+      u.label.toLowerCase().includes(clean)
+    );
+  }
+  
+  return found ? found.key : null;
+}
+
+// ── Prefill values from URL query parameters ───────────────────────────
+try {
+  const params = new URLSearchParams(window.location.search);
+  const valParam = params.get('value') || params.get('val');
+  const fromParam = params.get('from');
+  const toParam = params.get('to');
+
+  let appliedFrom = null;
+  let appliedTo = null;
+  let appliedVal = null;
+
+  if (fromParam && fromParam.trim()) {
+    const fromKey = findUnitKey(fromParam);
+    if (fromKey) {
+      setDropdownValue(fromDropdown, fromKey);
+      appliedFrom = fromKey;
+    }
+  }
+  if (toParam && toParam.trim()) {
+    const toKey = findUnitKey(toParam);
+    if (toKey) {
+      setDropdownValue(toDropdown, toKey);
+      appliedTo = toKey;
+    }
+  }
+  if (valParam && valParam.trim()) {
+    const cleanVal = valParam.trim();
+    if (CATEGORY.slug === 'binary') {
+      const activeFrom = appliedFrom || getDropdownValue(fromDropdown);
+      let isValid = true;
+      if (activeFrom === 'binary' && !/^[0-1]+$/.test(cleanVal)) isValid = false;
+      else if (activeFrom === 'octal' && !/^[0-7]+$/.test(cleanVal)) isValid = false;
+      else if (activeFrom === 'hexadecimal' && !/^[0-9a-fA-F]+$/.test(cleanVal)) isValid = false;
+      else if (activeFrom === 'decimal' && isNaN(parseFloat(cleanVal))) isValid = false;
+
+      if (isValid) {
+        fromInput.value = cleanVal;
+        appliedVal = cleanVal;
+      }
+    } else {
+      const numeric = parseFloat(cleanVal);
+      if (!isNaN(numeric) && isFinite(numeric)) {
+        fromInput.value = cleanVal;
+        appliedVal = cleanVal;
+      }
+    }
+  }
+
+  // Track event
+  if (appliedFrom || appliedTo || appliedVal !== null) {
+    if (typeof gtag === 'function') {
+      gtag('event', 'share_link_opened', {
+        converter_category: CATEGORY.slug,
+        source_unit: appliedFrom || getDropdownValue(fromDropdown),
+        destination_unit: appliedTo || getDropdownValue(toDropdown),
+        value: appliedVal !== null ? String(appliedVal) : fromInput.value,
+        device_type: getDeviceType()
+      });
+    }
+  }
+} catch (e) {
+  // Graceful fallback - no console errors or crashes
+}
+
+// ── Real-Time Currency Live rates sync ────────────────────────────────
+const LIVE_RATES = {};
+
+if (CATEGORY.slug === 'currency') {
+  // Click handler for Popular Pairs Table rows
+  const popularRows = document.querySelectorAll('.popular-pair-row');
+  popularRows.forEach(row => {
+    row.addEventListener('click', () => {
+      const from = row.getAttribute('data-from');
+      const to = row.getAttribute('data-to');
+      if (from && to) {
+        setDropdownValue(fromDropdown, from);
+        setDropdownValue(toDropdown, to);
+        updateConversion();
+
+        if (typeof gtag === 'function') {
+          gtag('event', 'popular_pair_clicked', {
+            from_currency: from,
+            to_currency: to,
+            device_type: getDeviceType()
+          });
+        }
+      }
+    });
+  });
+
+  // Sync cache or fetch live rates
+  const cachedData = loadCachedRates();
+  if (cachedData && cachedData.rates) {
+    console.log("Loaded cached live currency rates:", cachedData.rates);
+    applyLiveRates(cachedData.rates);
+    updateLastUpdatedDisplay(cachedData.date || new Date().toISOString());
+    updatePopularPairsTable();
+    updateConversion();
+  } else {
+    // Fetch live rates
+    fetch('https://api.frankfurter.app/latest?from=USD')
+      .then(res => {
+        if (!res.ok) throw new Error(`Frankfurter API returned status ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        if (data && data.rates) {
+          const rates = { USD: 1.0, ...data.rates };
+          console.log("Fetched live currency rates from API:", rates);
+          saveRatesToCache(rates, data.date);
+          applyLiveRates(rates);
+          updateLastUpdatedDisplay(data.date);
+          updatePopularPairsTable();
+          updateConversion();
+        } else {
+          throw new Error("Invalid rate payload from API");
+        }
+      })
+      .catch(err => {
+        console.error("Failed to fetch live currency rates:", err);
+        const displayEl = document.getElementById('last-updated-display');
+        if (displayEl) {
+          displayEl.textContent = 'Error: Stale or offline rates. Please check connection.';
+          displayEl.style.color = '#ef4444';
+        }
+      });
+  }
+}
+
+function loadCachedRates() {
+  try {
+    const cached = localStorage.getItem('realunitconverter_rates_cache');
+    if (cached) {
+      const data = JSON.parse(cached);
+      if (Date.now() - data.timestamp < 3600000) { // 1 hour
+        return data;
+      }
+    }
+  } catch (_) {}
+  return null;
+}
+
+function saveRatesToCache(rates, date) {
+  try {
+    localStorage.setItem('realunitconverter_rates_cache', JSON.stringify({
+      timestamp: Date.now(),
+      date: date,
+      rates: rates
+    }));
+  } catch (_) {}
+}
+
+function applyLiveRates(rates) {
+  Object.keys(rates).forEach(k => {
+    LIVE_RATES[k] = rates[k];
+    const uk = k.toLowerCase();
+    if (unitMap[uk]) {
+      unitMap[uk].factor = 1 / rates[k];
+    }
+  });
+}
+
+function updateLastUpdatedDisplay(dateStr) {
+  const displayEl = document.getElementById('last-updated-display');
+  if (displayEl) {
+    const d = new Date(dateStr);
+    displayEl.textContent = d.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      timeZone: 'UTC',
+      timeZoneName: 'short'
+    });
+  }
+}
+
+function updatePopularPairsTable() {
+  const rows = document.querySelectorAll('.popular-pair-row');
+  rows.forEach(row => {
+    const from = row.getAttribute('data-from').toUpperCase();
+    const to = row.getAttribute('data-to').toUpperCase();
+    if (from && to && LIVE_RATES[from] && LIVE_RATES[to]) {
+      const cell = row.querySelector('.rate-value');
+      const crossRate = LIVE_RATES[to] / LIVE_RATES[from];
+      if (cell) cell.textContent = crossRate.toFixed(4);
+
+      const changeCell = row.lastElementChild;
+      if (changeCell) {
+        const sortedDates = Object.keys(HISTORICAL_RATES).sort();
+        const series = [];
+        sortedDates.forEach(date => {
+          const dateRates = HISTORICAL_RATES[date];
+          const fromUsd = dateRates[from] ?? 1.0;
+          const toUsd = dateRates[to] ?? 1.0;
+          series.push(toUsd / fromUsd);
+        });
+        if (series.length > 0) {
+          series[series.length - 1] = crossRate;
+        }
+        if (series.length >= 2) {
+          const previous = series[series.length - 2];
+          if (previous !== 0) {
+            const percent = ((crossRate - previous) / previous) * 100;
+            const isUp = percent >= 0;
+            changeCell.textContent = `${isUp ? '↑ +' : '↓ '}${percent.toFixed(2)}%`;
+            changeCell.className = `px-4 py-3 text-right font-bold ${isUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`;
+          }
+        }
+      }
+    }
+  });
+}
+
+function updateCurrencyDashboard(fromKey, toKey) {
+  const activeTitle = document.getElementById('active-pair-title-display');
+  const activeValue = document.getElementById('active-pair-value-display');
+  const activeChange = document.getElementById('active-pair-change-display');
+  const sparklinePath = document.getElementById('active-sparkline-path');
+
+  if (!activeTitle || !activeValue || !activeChange || !sparklinePath) return;
+
+  const from = fromKey.toUpperCase();
+  const to = toKey.toUpperCase();
+
+  activeTitle.textContent = `${from} to ${to} exchange rate`;
+
+  const sortedDates = Object.keys(HISTORICAL_RATES).sort();
+  const series = [];
+  sortedDates.forEach(date => {
+    const dateRates = HISTORICAL_RATES[date];
+    const fromUsd = dateRates[from] ?? 1.0;
+    const toUsd = dateRates[to] ?? 1.0;
+    series.push(toUsd / fromUsd);
+  });
+
+  if (series.length > 0 && LIVE_RATES[from] && LIVE_RATES[to]) {
+    series[series.length - 1] = LIVE_RATES[to] / LIVE_RATES[from];
+  }
+
+  if (series.length < 2) return;
+
+  const currentVal = series[series.length - 1];
+  activeValue.textContent = `1 ${from} = ${currentVal.toFixed(4)} ${to}`;
+
+  const previous = series[series.length - 2];
+  if (previous !== 0) {
+    const diff = currentVal - previous;
+    const percent = (diff / previous) * 100;
+    const isUp = percent >= 0;
+    const formatted = `${isUp ? '↑ +' : '↓ '}${percent.toFixed(2)}%`;
+
+    activeChange.textContent = formatted;
+    if (isUp) {
+      activeChange.className = 'px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400';
+    } else {
+      activeChange.className = 'px-2.5 py-1 rounded-full text-xs font-bold bg-red-500/10 text-red-600 dark:text-red-400';
+    }
+  }
+
+  const pathData = generateSparklinePath(series);
+  sparklinePath.setAttribute('d', pathData);
+  
+  const isUp = currentVal >= previous;
+  sparklinePath.setAttribute('stroke', isUp ? '#10b981' : '#ef4444');
+}
+
+function generateSparklinePath(rates) {
+  const width = 120;
+  const height = 40;
+  const padding = 4;
+
+  const min = Math.min(...rates);
+  const max = Math.max(...rates);
+  const range = max - min;
+
+  let path = '';
+  for (let i = 0; i < rates.length; i++) {
+    const x = (i / (rates.length - 1)) * width;
+    let y = height / 2;
+
+    if (range > 0) {
+      y = height - padding - ((rates[i] - min) / range) * (height - 2 * padding);
+    }
+
+    path += `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+  }
+  return path;
+}
 
 // Run once on load
 updateConversion();

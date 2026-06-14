@@ -16,10 +16,27 @@ const {
   title = 'Unit Converter — Free Online Conversion Tools',
   description = 'Free online unit converter with hundreds of conversion tools, calculators, and conversion pages for everyday, academic, engineering, and professional use.',
 } = Astro.props;
+
+import { isRtlLocale, getAlternateUrls, locales, localeNames } from '../utils/i18n';
+
+const locale = Astro.currentLocale || 'en';
+const dir = isRtlLocale(locale) ? 'rtl' : 'ltr';
+
+const canonicalURL = new URL(Astro.url.pathname, Astro.site || 'https://realunitconverter.com');
+const ogImage = new URL('/og-preview.png', Astro.site || 'https://realunitconverter.com');
+
+const pathname = Astro.url.pathname;
+const segments = pathname.split('/').filter(Boolean);
+let cleanPath = pathname;
+if (segments.length > 0 && locales.includes(segments[0] as any)) {
+  cleanPath = '/' + segments.slice(1).join('/');
+}
+const defaultCanonicalURL = new URL(cleanPath, Astro.site || 'https://realunitconverter.com');
+const alternateUrls = getAlternateUrls(pathname);
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={locale} dir={dir}>
 	<head>
 		<!-- Google tag (gtag.js) -->
 		<script async src="https://www.googletagmanager.com/gtag/js?id=G-8D85PRT51S" is:inline></script>
@@ -40,12 +57,26 @@ const {
 		<meta name="generator" content={Astro.generator} />
 		<title>{title}</title>
 		<meta name="description" content={description} />
+		<link rel="canonical" href={canonicalURL} />
+		
+		<!-- SEO Language alternates -->
+		<link rel="alternate" hreflang="x-default" href={defaultCanonicalURL} />
+		{alternateUrls.map(alt => (
+			<link rel="alternate" hreflang={alt.locale} href={new URL(alt.href, Astro.site || 'https://realunitconverter.com')} />
+		))}
+
+		<!-- Removed auto-redirect script for SEO compliance -->
+		
+		<meta property="og:url" content={canonicalURL} />
 		<meta property="og:title" content={title} />
 		<meta property="og:description" content={description} />
+		<meta property="og:image" content={ogImage} />
 		<meta property="og:type" content="website" />
-		<meta name="twitter:card" content="summary" />
+		
+		<meta name="twitter:card" content="summary_large_image" />
 		<meta name="twitter:title" content={title} />
 		<meta name="twitter:description" content={description} />
+		<meta name="twitter:image" content={ogImage} />
 		<script is:inline>
 			// Check user theme preference, fallback to dark mode as default
 			const theme = (() => {
@@ -54,19 +85,96 @@ const {
 				}
 				return 'dark';
 			})();
-			
-			if (theme === 'dark') {
+
+			const systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+			const isDark = theme === 'dark' || (theme === 'system' && systemDark);
+
+			if (isDark) {
 				document.documentElement.classList.add('dark');
 			} else {
 				document.documentElement.classList.remove('dark');
+			}
+
+			if (theme === 'light' || theme === 'dark' || theme === 'system') {
+				document.documentElement.setAttribute('data-theme', theme);
 			}
 		</script>
 	</head>
 	<body class="bg-canvas-soft text-ink font-sans antialiased min-h-screen overflow-x-hidden">
 		<ScientificBackground />
+		
+		<div id="locale-suggestion-banner" class="hidden bg-primary/10 border-b border-primary/20 text-ink px-4 py-2 text-sm text-center flex items-center justify-center gap-4 z-50 relative">
+			<span id="locale-suggestion-text" class="font-medium"></span>
+			<div class="flex items-center gap-2">
+				<button id="locale-suggestion-accept" class="px-3 py-1 bg-primary text-white rounded-md font-medium hover:bg-primary-dark transition-colors">Switch</button>
+				<button id="locale-suggestion-dismiss" class="px-2 py-1 text-mute hover:text-ink transition-colors">Dismiss</button>
+			</div>
+		</div>
+
 		<Navbar />
 		<Sidebar />
 		
+		<!-- Locale Suggestion Script -->
+		<script is:inline define:vars={{ locales, localeNames }}>
+			(function() {
+				const storageKey = 'realunitconverter_lang_preference';
+				const dismissKey = 'realunitconverter_lang_dismissed';
+				let savedLang = localStorage.getItem(storageKey);
+				const dismissed = localStorage.getItem(dismissKey);
+				
+				const path = window.location.pathname;
+				const segments = path.split('/').filter(Boolean);
+				const pathLocale = segments.length > 0 && locales.includes(segments[0]) ? segments[0] : 'en';
+				
+				if (pathLocale !== 'en') {
+					localStorage.setItem(storageKey, pathLocale);
+				}
+
+				if (dismissed === 'true') return;
+
+				const browserLang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
+				let matchedLocale = 'en';
+				
+				for (const loc of locales) {
+					if (browserLang.startsWith(loc)) {
+						matchedLocale = loc;
+						break;
+					}
+				}
+
+				const targetLocale = savedLang || matchedLocale;
+
+				if (targetLocale !== 'en' && targetLocale !== pathLocale) {
+					window.addEventListener('DOMContentLoaded', () => {
+						const banner = document.getElementById('locale-suggestion-banner');
+						const text = document.getElementById('locale-suggestion-text');
+						const acceptBtn = document.getElementById('locale-suggestion-accept');
+						const dismissBtn = document.getElementById('locale-suggestion-dismiss');
+
+						if (banner && text && acceptBtn && dismissBtn) {
+							const langName = localeNames[targetLocale] || targetLocale;
+							text.textContent = `Would you like to view this site in ${langName}?`;
+							banner.classList.remove('hidden');
+
+							acceptBtn.addEventListener('click', () => {
+								localStorage.setItem(storageKey, targetLocale);
+								let cleanPath = path;
+								if (pathLocale !== 'en') {
+									cleanPath = '/' + segments.slice(1).join('/');
+								}
+								if (!cleanPath.startsWith('/')) cleanPath = '/' + cleanPath;
+								window.location.href = '/' + targetLocale + cleanPath;
+							});
+
+							dismissBtn.addEventListener('click', () => {
+								localStorage.setItem(dismissKey, 'true');
+								banner.classList.add('hidden');
+							});
+						}
+					});
+				}
+			})();
+		</script>
 		<div class="pt-[64px] min-h-screen flex flex-col relative z-[1]">
 			<main class="px-4 md:px-8 py-6 md:py-10 max-w-[1400px] mx-auto w-full flex-grow">
 				<slot />

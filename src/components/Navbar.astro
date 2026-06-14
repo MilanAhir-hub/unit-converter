@@ -1,6 +1,74 @@
 ---
 import { Icon } from 'astro-icon/components';
 import { navigationData, isCategory } from '../data/navigation';
+import { t, translateCategory, translatePopularRoute, locales, localeNames } from '../utils/i18n';
+
+const pathname = Astro.url.pathname;
+const locale = Astro.currentLocale || 'en';
+
+const segments = pathname.split('/').filter(Boolean);
+const pathLocale = segments.length > 0 && locales.includes(segments[0] as any) ? segments[0] : 'en';
+
+let cleanPath = pathname;
+if (segments.length > 0 && locales.includes(segments[0] as any)) {
+  cleanPath = '/' + segments.slice(1).join('/');
+}
+if (!cleanPath.startsWith('/')) {
+  cleanPath = '/' + cleanPath;
+}
+if (cleanPath.endsWith('/') && cleanPath.length > 1) {
+  cleanPath = cleanPath.slice(0, -1);
+}
+
+const getMenuTitle = (title: string) => {
+  if (title === 'Home') return t('nav_home', locale);
+  if (title === 'Unit Converters') return t('nav_converters', locale);
+  if (title === 'Popular Conversions') return t('nav_popular', locale);
+  if (title === 'Calculators') return t('nav_calculators', locale);
+  if (title === 'Scientific Tools') return t('nav_tools', locale);
+  if (title === 'Blog & Guides') return t('nav_blog', locale);
+  if (title === 'About') return t('nav_about', locale);
+  if (title === 'Contact') return t('nav_contact', locale);
+  if (title === 'History') return t('nav_history', locale);
+  if (title === 'Favorites') return t('nav_favorites', locale);
+  return title;
+};
+
+const getSubItemTitle = (subItem: any) => {
+  const href = subItem.href;
+  const segments = href.split('/').filter(Boolean);
+  
+  if (segments.length === 2) {
+    if (segments[0] === 'unit-converters') {
+      return translateCategory(segments[1], locale);
+    }
+    if (segments[0] === 'calculators' || segments[0] === 'tools') {
+      return translateCategory(segments[1], locale);
+    }
+    if (segments[0] === 'popular') {
+      return translatePopularRoute(segments[1], locale, subItem.title);
+    }
+  }
+  return subItem.title;
+};
+
+const getLocalizedHref = (href: string) => {
+  if (locale === 'en') return href;
+  if (href.startsWith(`/${locale}`)) return href;
+  return `/${locale}${href}`;
+};
+
+const isActive = (href: string) => {
+  if (href === '/') {
+    return pathname === '/' || pathname === `/${locale}` || pathname === `/${locale}/`;
+  }
+  const locHref = getLocalizedHref(href);
+  return pathname === locHref || pathname === `${locHref}/`;
+};
+
+const isCategoryActive = (category: any) => {
+  return category.items?.some((subItem: any) => isActive(subItem.href)) ?? false;
+};
 ---
 
 <header class="fixed top-0 z-30 w-full bg-canvas border-b border-hairline h-[64px] flex items-center px-4 md:px-8">
@@ -15,30 +83,57 @@ import { navigationData, isCategory } from '../data/navigation';
     <nav class="hidden lg:flex items-center gap-1">
       {navigationData.map((item) => {
         if (isCategory(item)) {
-          const fallbackHref = item.items[0]?.href || '#';
+          const fallbackHref = getLocalizedHref(item.items[0]?.href || '#');
           const colClass = "columns-1 w-[260px]";
 
           return (
             <div class="menu-wrapper relative py-2">
               <a 
                 href={fallbackHref}
-                class="menu-trigger flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium text-body hover:text-ink hover:bg-canvas-soft-2 transition-colors cursor-pointer select-none"
+                class={`menu-trigger flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors cursor-pointer select-none ${
+                  isCategoryActive(item)
+                    ? 'bg-primary/10 dark:bg-primary/20 text-primary'
+                    : 'text-body hover:text-ink hover:bg-canvas-soft-2'
+                }`}
               >
-                <span>{item.title}</span>
+                <span>{getMenuTitle(item.title)}</span>
                 <Icon name="hugeicons:arrow-down-01" class="chevron-icon w-3.5 h-3.5 text-mute transition-transform duration-200" />
               </a>
               
               <!-- Hover Mega Menu Panel -->
-              <div class="dropdown-panel absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-canvas border border-hairline rounded-md shadow-2xl p-1.5 transform translate-y-2 opacity-0 pointer-events-none z-50">
-                <div class={`${colClass}`}>
+              <div class="dropdown-panel absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-canvas border border-hairline rounded-md shadow-2xl p-1.5 transform translate-y-2 opacity-0 pointer-events-none z-50 max-h-[calc(100vh-80px)] overflow-y-auto no-scrollbar w-[270px]">
+                <!-- Search Input Container -->
+                <div class="px-1.5 py-1 border-b border-hairline bg-canvas sticky top-0 z-10 mb-1">
+                  <div class="relative flex items-center group">
+                    <Icon name="hugeicons:search-02" class="absolute left-2 w-3 h-3 text-mute group-focus-within:text-primary transition-colors flex-shrink-0" />
+                    <input 
+                      type="text" 
+                      class="navbar-dropdown-search-input w-full h-7 pl-6 pr-2 bg-canvas-soft border border-hairline rounded-sm text-xs text-ink placeholder:text-mute focus:outline-none focus:border-primary/50 transition-colors"
+                      placeholder="Search..."
+                      autocomplete="off"
+                    />
+                  </div>
+                </div>
+
+                <div class={`${colClass} dropdown-items-list`}>
                   {item.items.map((subItem) => (
                     <a 
-                      href={subItem.href} 
-                      class="text-[13px] text-body hover:text-ink transition-all duration-150 truncate block px-3 py-2 rounded-md hover:bg-canvas-soft-2 break-inside-avoid"
+                      href={getLocalizedHref(subItem.href)} 
+                      class={`text-[13px] transition-all duration-150 truncate block px-3 py-2 rounded-md break-inside-avoid navbar-dropdown-item ${
+                        isActive(subItem.href)
+                          ? 'bg-primary/10 dark:bg-primary/20 text-primary font-semibold'
+                          : 'text-body hover:text-ink hover:bg-canvas-soft-2'
+                      }`}
+                      data-title={getSubItemTitle(subItem).toLowerCase()}
                     >
-                      {subItem.title}
+                      {getSubItemTitle(subItem)}
                     </a>
                   ))}
+                </div>
+
+                <!-- Empty state container -->
+                <div class="navbar-dropdown-empty-state px-3 py-4 text-center text-xs text-mute select-none hidden">
+                  No results found
                 </div>
               </div>
             </div>
@@ -47,10 +142,14 @@ import { navigationData, isCategory } from '../data/navigation';
 
         return (
           <a 
-            href={item.href}
-            class="px-3 py-1.5 rounded-md text-sm font-medium text-body hover:text-ink hover:bg-canvas-soft-2 transition-colors cursor-pointer"
+            href={getLocalizedHref(item.href)}
+            class={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors cursor-pointer ${
+              isActive(item.href)
+                ? 'bg-primary/10 dark:bg-primary/20 text-primary'
+                : 'text-body hover:text-ink hover:bg-canvas-soft-2'
+            }`}
           >
-            {item.title}
+            {getMenuTitle(item.title)}
           </a>
         );
       })}
@@ -58,15 +157,80 @@ import { navigationData, isCategory } from '../data/navigation';
 
     <!-- Right side: Actions -->
     <div class="flex items-center gap-1 sm:gap-2">
+      <!-- Language Switcher -->
+      <div class="lang-switcher-wrapper relative py-2">
+        <button 
+          id="lang-switcher-btn" 
+          type="button" 
+          class="inline-flex items-center p-2 text-ink rounded-sm hover:bg-canvas-soft-2 focus:outline-none transition-colors cursor-pointer"
+          aria-label="Switch language"
+        >
+          <Icon name="hugeicons:translation" class="w-5 h-5 sm:w-6 sm:h-6" />
+        </button>
+        
+        <!-- Language Dropdown Menu -->
+        <div 
+          id="lang-dropdown-panel" 
+          class="dropdown-panel absolute right-0 rtl:right-auto rtl:left-0 top-full mt-1 bg-canvas border border-hairline rounded-md shadow-2xl p-1.5 transform translate-y-2 opacity-0 pointer-events-none z-50 w-[220px] max-h-[300px] overflow-y-auto no-scrollbar"
+        >
+          <!-- Language Search Input Container -->
+          <div class="px-1.5 py-1 border-b border-hairline bg-canvas sticky top-0 z-10 mb-1">
+            <div class="relative flex items-center group">
+              <Icon name="hugeicons:search-02" class="absolute left-2 w-3 h-3 text-mute group-focus-within:text-primary transition-colors flex-shrink-0" />
+              <input 
+                type="text" 
+                id="lang-search-input"
+                class="w-full h-7 pl-6 pr-2 bg-canvas-soft border border-hairline rounded-sm text-xs text-ink placeholder:text-mute focus:outline-none focus:border-primary/50 transition-colors"
+                placeholder="Search..."
+                autocomplete="off"
+              />
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-0.5" id="lang-links-container">
+            {locales.map(loc => {
+              const prefix = loc === 'en' ? '' : '/' + loc;
+              let href = prefix + cleanPath;
+              if (href.endsWith('/') && href.length > 1) {
+                href = href.slice(0, -1);
+              }
+              const isSelected = loc === pathLocale;
+              return (
+                <a 
+                  href={href} 
+                  data-locale={loc}
+                  class={`lang-option flex items-center justify-between px-3 py-2 rounded-md text-[13px] font-medium transition-all ${
+                    isSelected 
+                      ? 'bg-primary/10 text-primary font-semibold' 
+                      : 'text-body hover:text-ink hover:bg-canvas-soft-2'
+                  }`}
+                >
+                  <span>{localeNames[loc]}</span>
+                  <span class="text-[10px] font-mono text-mute uppercase tracking-widest">{loc}</span>
+                </a>
+              );
+            })}
+          </div>
+
+          <div id="lang-empty-state" class="px-3 py-4 text-center text-xs text-mute select-none hidden">
+            No results found
+          </div>
+        </div>
+      </div>
+
       <!-- Theme Toggle Button -->
       <button 
         id="theme-toggle" 
         type="button" 
         class="inline-flex items-center p-2 text-ink rounded-sm hover:bg-canvas-soft-2 focus:outline-none transition-colors cursor-pointer"
         aria-label="Toggle theme"
+        title="Toggle theme"
       >
-        <Icon name="hugeicons:sun-02" class="w-5 h-5 sm:w-6 sm:h-6 hidden dark:block" />
-        <Icon name="hugeicons:moon-02" class="w-5 h-5 sm:w-6 sm:h-6 block dark:hidden" />
+        <span class="theme-icons w-5 h-5 sm:w-6 sm:h-6">
+          <Icon name="hugeicons:sun-02" class="theme-icon theme-icon-sun w-5 h-5 sm:w-6 sm:h-6" />
+          <Icon name="hugeicons:moon-02" class="theme-icon theme-icon-moon w-5 h-5 sm:w-6 sm:h-6" />
+          <Icon name="hugeicons:computer" class="theme-icon theme-icon-system w-5 h-5 sm:w-6 sm:h-6" />
+        </span>
       </button>
 
       <!-- Mobile Hamburger button (shown below lg) -->
@@ -107,19 +271,31 @@ import { navigationData, isCategory } from '../data/navigation';
         return (
           <div class="mobile-cat-wrapper">
             <button
-              class="mobile-cat-trigger w-full flex items-center justify-between px-4 py-3 rounded-md text-sm font-medium text-ink hover:bg-canvas-soft-2 transition-colors cursor-pointer"
-              aria-expanded="false"
+              class={`mobile-cat-trigger w-full flex items-center justify-between px-4 py-3 rounded-md text-sm font-medium transition-colors cursor-pointer ${
+                isCategoryActive(item)
+                  ? 'bg-primary/10 dark:bg-primary/20 text-primary'
+                  : 'text-ink hover:bg-canvas-soft-2'
+              }`}
+              aria-expanded={isCategoryActive(item) ? "true" : "false"}
             >
-              <span>{item.title}</span>
-              <Icon name="hugeicons:arrow-down-01" class="mobile-chevron w-4 h-4 text-mute transition-transform duration-200 flex-shrink-0" />
+              <span>{getMenuTitle(item.title)}</span>
+              <Icon name="hugeicons:arrow-down-01" class={`mobile-chevron w-4 h-4 text-mute transition-transform duration-200 flex-shrink-0 ${
+                isCategoryActive(item) ? 'rotated' : ''
+              }`} />
             </button>
-            <div class="mobile-cat-panel hidden pl-4 pb-2 flex flex-col gap-0.5">
+            <div class={`mobile-cat-panel pl-4 pb-2 flex flex-col gap-0.5 ${
+              isCategoryActive(item) ? 'is-open' : 'hidden'
+            }`}>
               {item.items.map((subItem) => (
                 <a 
-                  href={subItem.href}
-                  class="block px-4 py-2 rounded-md text-[13px] text-body hover:text-ink hover:bg-canvas-soft-2 transition-colors"
+                  href={getLocalizedHref(subItem.href)}
+                  class={`block px-4 py-2 rounded-md text-[13px] transition-colors ${
+                    isActive(subItem.href)
+                      ? 'bg-primary/10 dark:bg-primary/20 text-primary font-semibold'
+                      : 'text-body hover:text-ink hover:bg-canvas-soft-2'
+                  }`}
                 >
-                  {subItem.title}
+                  {getSubItemTitle(subItem)}
                 </a>
               ))}
             </div>
@@ -128,10 +304,14 @@ import { navigationData, isCategory } from '../data/navigation';
       }
       return (
         <a
-          href={item.href}
-          class="flex items-center px-4 py-3 rounded-md text-sm font-medium text-ink hover:bg-canvas-soft-2 transition-colors"
+          href={getLocalizedHref(item.href)}
+          class={`flex items-center px-4 py-3 rounded-md text-sm font-medium transition-colors ${
+            isActive(item.href)
+              ? 'bg-primary/10 dark:bg-primary/20 text-primary'
+              : 'text-ink hover:bg-canvas-soft-2'
+          }`}
         >
-          {item.title}
+          {getMenuTitle(item.title)}
         </a>
       );
     })}
@@ -150,9 +330,15 @@ import { navigationData, isCategory } from '../data/navigation';
     transition: opacity 250ms cubic-bezier(0.16, 1, 0.3, 1), transform 250ms cubic-bezier(0.16, 1, 0.3, 1);
   }
   
-  .dropdown-panel.is-open {
+  .menu-wrapper .dropdown-panel.is-open {
     opacity: 1 !important;
     transform: translate(-50%, 0px) !important;
+    pointer-events: auto !important;
+  }
+
+  .lang-switcher-wrapper .dropdown-panel.is-open {
+    opacity: 1 !important;
+    transform: translate(0px, 0px) !important;
     pointer-events: auto !important;
   }
   
@@ -178,28 +364,135 @@ import { navigationData, isCategory } from '../data/navigation';
 </style>
 
 <script>
-  // Theme toggling persistence
+  // Theme toggling persistence with light / dark / system cycle
   const themeToggleBtn = document.getElementById('theme-toggle');
-  
-  const handleThemeToggle = () => {
-    const isDark = document.documentElement.classList.contains('dark');
+  const THEME_CYCLE: Array<'light' | 'dark' | 'system'> = ['light', 'dark', 'system'];
+  const THEME_ARIA: Record<string, string> = {
+    light: 'Theme: Light (click for Dark)',
+    dark: 'Theme: Dark (click for System)',
+    system: 'Theme: System (click for Light)',
+  };
+
+  const getStoredTheme = (): 'light' | 'dark' | 'system' | null => {
+    if (typeof localStorage === 'undefined') return null;
+    const stored = localStorage.getItem('theme');
+    if (stored === 'light' || stored === 'dark' || stored === 'system') return stored;
+    return null;
+  };
+
+  const resolveCurrentTheme = (): 'light' | 'dark' | 'system' => {
+    const stored = getStoredTheme();
+    if (stored) return stored;
+    return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+  };
+
+  const applyThemeTransition = () => {
+    const body = document.body;
+    body.classList.add('theme-transitioning');
+    window.setTimeout(() => body.classList.remove('theme-transitioning'), 360);
+  };
+
+  const setTheme = (next: 'light' | 'dark' | 'system') => {
+    const html = document.documentElement;
+    const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark = next === 'dark' || (next === 'system' && systemDark);
+
+    applyThemeTransition();
+
     if (isDark) {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
+      html.classList.add('dark');
     } else {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
+      html.classList.remove('dark');
+    }
+    html.setAttribute('data-theme', next);
+
+    try {
+      localStorage.setItem('theme', next);
+    } catch (_e) { /* storage may be unavailable */ }
+
+    if (themeToggleBtn) {
+      themeToggleBtn.setAttribute('aria-label', THEME_ARIA[next] || 'Toggle theme');
+      themeToggleBtn.setAttribute('title', THEME_ARIA[next] || 'Toggle theme');
     }
   };
 
+  const handleThemeToggle = () => {
+    const current = resolveCurrentTheme();
+    const next = THEME_CYCLE[(THEME_CYCLE.indexOf(current) + 1) % THEME_CYCLE.length];
+    setTheme(next);
+  };
+
   themeToggleBtn?.addEventListener('click', handleThemeToggle);
+
+  // React to OS theme changes while in system mode
+  const systemMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const handleSystemThemeChange = (e: MediaQueryListEvent) => {
+    if (getStoredTheme() === 'system') {
+      applyThemeTransition();
+      if (e.matches) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+  };
+
+  if (typeof systemMediaQuery.addEventListener === 'function') {
+    systemMediaQuery.addEventListener('change', handleSystemThemeChange);
+  } else if (typeof (systemMediaQuery as any).addListener === 'function') {
+    (systemMediaQuery as any).addListener(handleSystemThemeChange);
+  }
+
+  // Initialize aria label / title to reflect the current theme
+  const initialTheme = resolveCurrentTheme();
+  if (themeToggleBtn) {
+    themeToggleBtn.setAttribute('aria-label', THEME_ARIA[initialTheme] || 'Toggle theme');
+    themeToggleBtn.setAttribute('title', THEME_ARIA[initialTheme] || 'Toggle theme');
+  }
+
+  // Function to lock/unlock body scroll based on active panels in Navbar
+  const updateBodyScroll = () => {
+    const isDesktopMenuOpen = Array.from(document.querySelectorAll('.menu-wrapper')).some(w => w.classList.contains('is-active'));
+    const isMobileMenuOpen = document.getElementById('mobile-nav-menu')?.classList.contains('is-open');
+    const isLangOpen = document.getElementById('lang-dropdown-panel')?.classList.contains('is-open');
+
+    if (isDesktopMenuOpen || isMobileMenuOpen || isLangOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+  };
 
   // Debounced/Delayed Mega-Menus hover handlers (0.5-second stay delay)
   const menuWrappers = document.querySelectorAll('.menu-wrapper');
   
   menuWrappers.forEach((wrapper) => {
     const panel = wrapper.querySelector('.dropdown-panel');
+    const searchInput = panel?.querySelector('.navbar-dropdown-search-input') as HTMLInputElement;
+    const emptyState = panel?.querySelector('.navbar-dropdown-empty-state');
     let timeoutId: number | undefined;
+    let highlightedIndex = -1;
+
+    const getVisibleItems = () => {
+      return Array.from(panel?.querySelectorAll('.navbar-dropdown-item') || []).filter(
+        item => (item as HTMLElement).style.display !== 'none'
+      );
+    };
+    
+    const highlightItem = (index: number) => {
+      const visibleItems = getVisibleItems();
+      const allItems = panel?.querySelectorAll('.navbar-dropdown-item') || [];
+      allItems.forEach(item => item.classList.remove('bg-primary/10', 'text-primary', 'font-semibold'));
+      
+      if (index >= 0 && index < visibleItems.length) {
+        highlightedIndex = index;
+        const activeEl = visibleItems[highlightedIndex] as HTMLElement;
+        activeEl.classList.add('bg-primary/10', 'text-primary', 'font-semibold');
+        activeEl.scrollIntoView({ block: 'nearest' });
+      } else {
+        highlightedIndex = -1;
+      }
+    };
 
     const openPanel = () => {
       if (timeoutId) {
@@ -216,18 +509,98 @@ import { navigationData, isCategory } from '../data/navigation';
 
       wrapper.classList.add('is-active');
       panel?.classList.add('is-open');
+      updateBodyScroll();
+
+      // Reset filter on open
+      if (searchInput) {
+        searchInput.value = '';
+        const items = panel?.querySelectorAll('.navbar-dropdown-item') || [];
+        items.forEach(item => (item as HTMLElement).style.display = '');
+        emptyState?.classList.add('hidden');
+        highlightItem(-1);
+        setTimeout(() => searchInput.focus(), 100);
+      }
     };
 
     const closePanel = () => {
       timeoutId = setTimeout(() => {
+        if (searchInput) {
+          searchInput.blur();
+        }
         wrapper.classList.remove('is-active');
         panel?.classList.remove('is-open');
         timeoutId = undefined;
-      }, 500) as unknown as number;
+        updateBodyScroll();
+      }, 600) as unknown as number;
     };
 
     wrapper.addEventListener('mouseenter', openPanel);
     wrapper.addEventListener('mouseleave', closePanel);
+
+    if (searchInput) {
+      searchInput.addEventListener('input', () => {
+        const query = searchInput.value.trim().toLowerCase();
+        const items = panel?.querySelectorAll('.navbar-dropdown-item') || [];
+        let anyVisible = false;
+        
+        items.forEach(item => {
+          const title = item.getAttribute('data-title') || '';
+          if (title.includes(query)) {
+            (item as HTMLElement).style.display = '';
+            anyVisible = true;
+          } else {
+            (item as HTMLElement).style.display = 'none';
+          }
+        });
+        
+        highlightItem(-1);
+
+        if (anyVisible) {
+          emptyState?.classList.add('hidden');
+        } else {
+          emptyState?.classList.remove('hidden');
+        }
+      });
+
+      searchInput.addEventListener('keydown', (e: any) => {
+        const visibleItems = getVisibleItems();
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (visibleItems.length === 0) return;
+          let nextIdx = highlightedIndex + 1;
+          if (nextIdx >= visibleItems.length) nextIdx = 0;
+          highlightItem(nextIdx);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (visibleItems.length === 0) return;
+          let prevIdx = highlightedIndex - 1;
+          if (prevIdx < 0) prevIdx = visibleItems.length - 1;
+          highlightItem(prevIdx);
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          if (highlightedIndex >= 0 && highlightedIndex < visibleItems.length) {
+            window.location.href = (visibleItems[highlightedIndex] as HTMLAnchorElement).href;
+          } else if (visibleItems.length > 0) {
+            window.location.href = (visibleItems[0] as HTMLAnchorElement).href;
+          }
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          wrapper.classList.remove('is-active');
+          panel?.classList.remove('is-open');
+          updateBodyScroll();
+        }
+      });
+
+      searchInput.addEventListener('blur', () => {
+        setTimeout(() => {
+          if (!wrapper.matches(':hover')) {
+            wrapper.classList.remove('is-active');
+            panel?.classList.remove('is-open');
+            updateBodyScroll();
+          }
+        }, 200);
+      });
+    }
   });
 
   // Mobile menu toggle
@@ -247,7 +620,7 @@ import { navigationData, isCategory } from '../data/navigation';
     mobileMenuToggle?.setAttribute('aria-expanded', 'true');
     menuOpenIcon?.classList.add('hidden');
     menuCloseIcon?.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
+    updateBodyScroll();
   };
 
   const closeMobileMenu = () => {
@@ -260,7 +633,7 @@ import { navigationData, isCategory } from '../data/navigation';
     mobileMenuToggle?.setAttribute('aria-expanded', 'false');
     menuOpenIcon?.classList.remove('hidden');
     menuCloseIcon?.classList.add('hidden');
-    document.body.style.overflow = '';
+    updateBodyScroll();
   };
 
   mobileMenuToggle?.addEventListener('click', () => {
@@ -307,4 +680,65 @@ import { navigationData, isCategory } from '../data/navigation';
       closeMobileMenu();
     }
   });
+
+  // ── Language Switcher Logic ───────────────────────────────────────────────
+  const switcherBtn = document.getElementById('lang-switcher-btn');
+  const langDropdownPanel = document.getElementById('lang-dropdown-panel');
+  const linksContainer = document.getElementById('lang-links-container');
+
+  if (switcherBtn && langDropdownPanel && linksContainer) {
+    const langSearchInput = document.getElementById('lang-search-input');
+    const langEmptyState = document.getElementById('lang-empty-state');
+    
+    if (langSearchInput) {
+      langSearchInput.addEventListener('input', () => {
+        const query = (langSearchInput as HTMLInputElement).value.trim().toLowerCase();
+        const options = linksContainer.querySelectorAll('.lang-option');
+        let anyVisible = false;
+        
+        options.forEach(opt => {
+          const locName = opt.querySelector('span')?.textContent?.toLowerCase() || '';
+          const locCode = opt.getAttribute('data-locale')?.toLowerCase() || '';
+          
+          if (locName.includes(query) || locCode.includes(query)) {
+            (opt as HTMLElement).style.display = '';
+            anyVisible = true;
+          } else {
+            (opt as HTMLElement).style.display = 'none';
+          }
+        });
+        
+        if (anyVisible) {
+          langEmptyState?.classList.add('hidden');
+        } else {
+          langEmptyState?.classList.remove('hidden');
+        }
+      });
+    }
+
+    switcherBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      langDropdownPanel.classList.toggle('is-open');
+      updateBodyScroll();
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!langDropdownPanel.contains(e.target) && e.target !== switcherBtn) {
+        if (langDropdownPanel.classList.contains('is-open')) {
+          langDropdownPanel.classList.remove('is-open');
+          updateBodyScroll();
+        }
+      }
+    });
+
+    linksContainer.querySelectorAll('.lang-option').forEach(link => {
+      link.addEventListener('click', (e) => {
+        const target = e.currentTarget;
+        const selectedLocale = target.getAttribute('data-locale');
+        if (selectedLocale) {
+          localStorage.setItem('realunitconverter_lang', selectedLocale);
+        }
+      });
+    });
+  }
 </script>

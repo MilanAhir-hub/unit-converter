@@ -31,11 +31,23 @@ const selectedOption = (options.length > 0 ? (options.find(o => o.key === select
   </button>
 
   <div class="dropdown-menu absolute top-full left-0 right-0 mt-1 bg-canvas border border-hairline rounded-md shadow-2xl z-50 opacity-0 pointer-events-none transform translate-y-1 transition-all duration-200">
+    <div class="px-2 py-1.5 border-b border-hairline bg-canvas sticky top-0 z-10">
+      <div class="relative flex items-center group">
+        <Icon name="hugeicons:search-02" class="absolute left-2.5 w-3.5 h-3.5 text-mute group-focus-within:text-primary transition-colors flex-shrink-0" />
+        <input 
+          type="text" 
+          class="dropdown-search-input w-full h-8 pl-8 pr-3 bg-canvas-soft border border-hairline rounded-sm text-xs text-ink placeholder:text-mute focus:outline-none focus:border-primary/50 transition-colors"
+          placeholder="Search..."
+          autocomplete="off"
+        />
+      </div>
+    </div>
+
     <div class="dropdown-items-container max-h-60 overflow-y-auto p-1 no-scrollbar">
       {options.length > 0 && options.map((option) => (
         <div 
           class:list={[
-            "dropdown-item px-3 py-2 rounded-sm text-sm cursor-pointer transition-colors",
+            "dropdown-item px-3 py-3 sm:py-2 rounded-sm text-sm cursor-pointer transition-colors",
             selectedOption && option.key === selectedOption.key ? "bg-primary/10 text-primary font-medium active-item" : "text-body hover:bg-canvas-soft-2 hover:text-ink"
           ]}
           data-key={option.key}
@@ -46,6 +58,10 @@ const selectedOption = (options.length > 0 ? (options.find(o => o.key === select
           {option.label}{option.symbol ? ` (${option.symbol})` : ''}
         </div>
       ))}
+    </div>
+
+    <div class="dropdown-empty-state px-3 py-4 text-center text-xs text-mute select-none is-hidden">
+      No results found
     </div>
   </div>
 </div>
@@ -59,6 +75,14 @@ const selectedOption = (options.length > 0 ? (options.find(o => o.key === select
 
   .custom-dropdown.is-open .chevron-icon {
     transform: rotate(180deg);
+  }
+
+  .dropdown-item.is-hidden {
+    display: none !important;
+  }
+
+  .dropdown-empty-state.is-hidden {
+    display: none !important;
   }
 
   /* Custom scrollbar */
@@ -90,6 +114,56 @@ const selectedOption = (options.length > 0 ? (options.find(o => o.key === select
       const itemsContainer = dropdown.querySelector('.dropdown-items-container');
       const selectedText = dropdown.querySelector('.selected-text');
 
+      const searchInput = dropdown.querySelector('.dropdown-search-input') as HTMLInputElement;
+      const emptyState = dropdown.querySelector('.dropdown-empty-state');
+
+      let highlightedIndex = -1;
+
+      function filterItems() {
+        if (!searchInput) return;
+        const query = searchInput.value.trim().toLowerCase();
+        let anyVisible = false;
+        const items = itemsContainer?.querySelectorAll('.dropdown-item') || [];
+        
+        items.forEach(item => {
+          const label = (item.getAttribute('data-label') || item.textContent || '').toLowerCase();
+          const key = (item.getAttribute('data-key') || '').toLowerCase();
+          
+          if (label.includes(query) || key.includes(query)) {
+            item.classList.remove('is-hidden');
+            anyVisible = true;
+          } else {
+            item.classList.add('is-hidden');
+          }
+        });
+
+        highlightVisibleItem(-1);
+
+        if (anyVisible) {
+          emptyState?.classList.add('is-hidden');
+        } else {
+          emptyState?.classList.remove('is-hidden');
+        }
+      }
+
+      function highlightVisibleItem(index: number) {
+        const visibleItems = Array.from(itemsContainer?.querySelectorAll('.dropdown-item:not(.is-hidden)') || []);
+        
+        const allItems = itemsContainer?.querySelectorAll('.dropdown-item') || [];
+        allItems.forEach(item => {
+          item.classList.remove('is-highlighted', 'bg-canvas-soft-2', 'text-ink');
+        });
+
+        if (index >= 0 && index < visibleItems.length) {
+          highlightedIndex = index;
+          const activeEl = visibleItems[highlightedIndex] as HTMLElement;
+          activeEl.classList.add('is-highlighted', 'bg-canvas-soft-2', 'text-ink');
+          activeEl.scrollIntoView({ block: 'nearest' });
+        } else {
+          highlightedIndex = -1;
+        }
+      }
+
       // Add .value and .selectedLabel properties to mimic native select
       Object.defineProperty(dropdown, 'value', {
         get() {
@@ -116,6 +190,12 @@ const selectedOption = (options.length > 0 ? (options.find(o => o.key === select
 
       // Method to update options dynamically
       (dropdown as any).updateOptions = function(newOptions: {key: string, label: string, symbol?: string}[], defaultValue?: string) {
+        if (searchInput) {
+          searchInput.value = '';
+        }
+        if (emptyState) {
+          emptyState.classList.add('is-hidden');
+        }
         if (!itemsContainer) return;
         
         let html = '';
@@ -123,7 +203,7 @@ const selectedOption = (options.length > 0 ? (options.find(o => o.key === select
           const label = `${option.label}${option.symbol ? ` (${option.symbol})` : ''}`;
           html += `
             <div 
-              class="dropdown-item px-3 py-2 rounded-sm text-sm cursor-pointer transition-colors text-body hover:bg-canvas-soft-2 hover:text-ink"
+              class="dropdown-item px-3 py-3 sm:py-2 rounded-sm text-sm cursor-pointer transition-colors text-body hover:bg-canvas-soft-2 hover:text-ink"
               data-key="${option.key}"
               data-label="${label}"
               role="option"
@@ -177,6 +257,12 @@ const selectedOption = (options.length > 0 ? (options.find(o => o.key === select
 
         dropdown.classList.remove('is-open');
 
+        // Clear search input on selection
+        if (searchInput) {
+          searchInput.value = '';
+          filterItems();
+        }
+
         if (dispatchEvent) {
           // Dispatch both custom and standard change event
           dropdown.dispatchEvent(new CustomEvent('change', { 
@@ -202,10 +288,24 @@ const selectedOption = (options.length > 0 ? (options.find(o => o.key === select
         
         if (!isOpen) {
           dropdown.classList.add('is-open');
+          
+          // Clear search when opening
+          if (searchInput) {
+            searchInput.value = '';
+            filterItems();
+          }
+
           // Scroll active item into view
           const activeItem = dropdown.querySelector('.active-item');
           if (activeItem) {
             (activeItem as HTMLElement).scrollIntoView({ block: 'nearest' });
+          }
+
+          // Auto-focus search input
+          if (searchInput) {
+            setTimeout(() => {
+              searchInput.focus();
+            }, 50);
           }
         } else {
           dropdown.classList.remove('is-open');
@@ -216,6 +316,76 @@ const selectedOption = (options.length > 0 ? (options.find(o => o.key === select
       const initialItems = dropdown.querySelectorAll('.dropdown-item');
       initialItems.forEach(item => {
         item.addEventListener('click', () => selectItem(item));
+      });
+
+      // Search input event listeners
+      searchInput?.addEventListener('input', filterItems);
+
+      searchInput?.addEventListener('keydown', (e: any) => {
+        const visibleItems = Array.from(itemsContainer?.querySelectorAll('.dropdown-item:not(.is-hidden)') || []);
+        
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (visibleItems.length === 0) return;
+          let nextIdx = highlightedIndex + 1;
+          if (nextIdx >= visibleItems.length) nextIdx = 0;
+          highlightVisibleItem(nextIdx);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (visibleItems.length === 0) return;
+          let prevIdx = highlightedIndex - 1;
+          if (prevIdx < 0) prevIdx = visibleItems.length - 1;
+          highlightVisibleItem(prevIdx);
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          if (highlightedIndex >= 0 && highlightedIndex < visibleItems.length) {
+            selectItem(visibleItems[highlightedIndex]);
+          } else if (visibleItems.length > 0) {
+            selectItem(visibleItems[0]);
+          }
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          dropdown.classList.remove('is-open');
+          (trigger as HTMLElement)?.focus();
+        }
+      });
+
+      // Keyboard support on trigger
+      trigger?.addEventListener('keydown', (e: any) => {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          if (!dropdown.classList.contains('is-open')) {
+            dropdown.classList.add('is-open');
+            if (searchInput) {
+              searchInput.value = '';
+              filterItems();
+            }
+            const activeItem = dropdown.querySelector('.active-item');
+            if (activeItem) {
+              (activeItem as HTMLElement).scrollIntoView({ block: 'nearest' });
+            }
+            if (searchInput) {
+              setTimeout(() => {
+                searchInput.focus();
+              }, 50);
+            }
+          }
+        }
+      });
+
+      // Prevent outside click handler from closing dropdown when clicking inside the menu
+      const menu = dropdown.querySelector('.dropdown-menu');
+      menu?.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+
+      // Close dropdown when focus leaves it (e.g. Tab out)
+      dropdown.addEventListener('focusout', () => {
+        setTimeout(() => {
+          if (!dropdown.contains(document.activeElement)) {
+            dropdown.classList.remove('is-open');
+          }
+        }, 10);
       });
     });
 

@@ -1,0 +1,8 @@
+---
+export const prerender = false;
+Astro.response.headers.set('Cache-Control', 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800');
+
+import OriginalPage from '../../../blog/category/[category].astro';
+---
+
+<OriginalPage {...Astro.props} />

@@ -1,0 +1,143 @@
+---
+import { getLearnData } from '../../data/learn/index';
+import FAQAccordion from './FAQAccordion.astro';
+import RelatedConverters from './RelatedConverters.astro';
+
+interface Props {
+  slug: string;
+  categoryTitle: string;
+  title: string;
+  units: { key: string; label: string; symbol: string }[];
+}
+
+const { slug, categoryTitle, title, units } = Astro.props;
+
+// Fetch learn data or fallback
+const learnData = getLearnData(slug, title, categoryTitle, units);
+---
+
+<section class="mt-12 sm:mt-16 md:mt-20 pt-12 sm:pt-16 md:pt-20 border-t border-hairline">
+  <!-- Section Title -->
+  <div class="mb-8 sm:mb-12">
+    <h2 class="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-[-0.04em] text-ink mb-3 sm:mb-4">
+      {learnData.title}
+    </h2>
+    <p class="text-body text-sm sm:text-base max-w-3xl leading-relaxed">
+      {learnData.introduction}
+    </p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-10">
+    <!-- Left Column: What is & Units Definition (Spans 2 columns on large screens) -->
+    <div class="lg:col-span-2 space-y-8 sm:space-y-10">
+      
+      <!-- What is Card -->
+      <div class="p-6 sm:p-8 bg-canvas border border-hairline rounded-lg">
+        <h3 class="text-lg sm:text-xl font-semibold text-ink mb-3 sm:mb-4">
+          {learnData.whatIsTitle}
+        </h3>
+        <p class="text-body text-sm leading-relaxed">
+          {learnData.whatIsDescription}
+        </p>
+
+        {learnData.systemComparisonTitle && learnData.systemComparisonDescription && (
+          <div class="mt-5 pt-5 border-t border-hairline/50">
+            <h4 class="text-sm font-semibold text-ink mb-2">
+              {learnData.systemComparisonTitle}
+            </h4>
+            <p class="text-body text-xs sm:text-sm leading-relaxed">
+              {learnData.systemComparisonDescription}
+            </p>
+          </div>
+        )}
+      </div>
+
+      <!-- Common Units Card -->
+      <div>
+        <h3 class="text-lg sm:text-xl font-semibold text-ink mb-4 sm:mb-5">
+          Common Units of Measurement
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {learnData.units.map((unit) => (
+            <div class="p-4 bg-canvas-soft border border-hairline rounded-lg flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-sm font-semibold text-ink">{unit.name}</span>
+                  <span class="text-xs font-mono font-bold text-primary bg-primary/8 px-2 py-0.5 rounded">
+                    {unit.symbol}
+                  </span>
+                </div>
+                <p class="text-xs text-body leading-relaxed">
+                  {unit.description}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Formulas & Examples (Spans 1 column) -->
+    <div class="space-y-8">
+      
+      <!-- Formulas Card -->
+      <div class="p-6 bg-canvas border border-hairline rounded-lg">
+        <h3 class="text-base sm:text-lg font-semibold text-ink mb-4">
+          Conversion Formulas
+        </h3>
+        <div class="space-y-4">
+          {learnData.formulas.map((f) => (
+            <div class="space-y-1.5">
+              <h4 class="text-xs font-semibold text-ink">{f.label}</h4>
+              <div class="p-3 bg-canvas-soft-2 border border-hairline rounded font-mono text-[11px] sm:text-xs text-ink/90 overflow-x-auto whitespace-pre-wrap break-words leading-relaxed select-all">
+                {f.formula}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <!-- Real-World Examples -->
+      <div class="p-6 bg-canvas border border-hairline rounded-lg">
+        <h3 class="text-base sm:text-lg font-semibold text-ink mb-3.5">
+          Real-World Applications
+        </h3>
+        <ul class="space-y-3">
+          {learnData.realWorldExamples.map((ex) => (
+            <li class="flex items-start gap-2.5 text-xs sm:text-sm text-body leading-relaxed">
+              <svg class="w-4 h-4 text-primary shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+              </svg>
+              <span>{ex}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAQs Accordion Section -->
+  <div class="mt-12 sm:mt-16 pt-10 sm:pt-14 border-t border-hairline/60">
+    <div class="max-w-3xl mb-6 sm:mb-8">
+      <h3 class="text-lg sm:text-xl font-semibold text-ink mb-2">
+        Frequently Asked Questions
+      </h3>
+      <p class="text-xs sm:text-sm text-body">
+        Learn how these conversions work, standard baseline values, and mathematical formulations.
+      </p>
+    </div>
+    <div class="max-w-4xl">
+      <FAQAccordion faqs={learnData.faqs} />
+    </div>
+  </div>
+
+  <!-- Related Converters Section -->
+  {learnData.relatedCategories.length > 0 && (
+    <div class="mt-12 sm:mt-16 pt-10 sm:pt-14 border-t border-hairline/60">
+      <h3 class="text-lg sm:text-xl font-semibold text-ink mb-6 sm:mb-8">
+        Related Conversion Tools
+      </h3>
+      <RelatedConverters relatedSlugs={learnData.relatedCategories} />
+    </div>
+  )}
+</section>
